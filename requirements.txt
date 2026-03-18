@@ -5,3 +5,4 @@ Pillow
 qrcode
 python-dotenv
 requests
+psycopg2-binary
