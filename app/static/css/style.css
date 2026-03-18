@@ -102,6 +102,55 @@
     border-color: rgba(255, 255, 255, 0.05);
 }
 
+/* Dark Mode Map Overrides */
+[data-theme="dark"] .room-poly {
+    fill: #2d3748; /* Slate gray base */
+    stroke: #4b5563; /* Darker stroke */
+}
+
+[data-theme="dark"] .room-poly.fill-silver { fill: #374151; }
+[data-theme="dark"] .room-poly.fill-orange { fill: #fbbf24; } /* Warm Yellow/Orange */
+[data-theme="dark"] .room-poly.fill-red { fill: #f87171; } /* Soft Coral Red */
+[data-theme="dark"] .room-poly.fill-blue { fill: #60a5fa; } /* Bright Light Blue */
+[data-theme="dark"] .room-poly.fill-teal { fill: #34d399; } /* Bright Mint/Teal */
+[data-theme="dark"] .room-poly.fill-pink { fill: #f472b6; } /* Soft Pink */
+
+[data-theme="dark"] .building-outline {
+    fill: #1f2937;
+    stroke: #374151;
+}
+
+[data-theme="dark"] .room-group:hover .room-poly {
+    filter: brightness(1.2);
+    stroke: #9ca3af;
+}
+
+[data-theme="dark"] .room-group.selected .room-poly {
+    fill: #27ae60 !important;
+    stroke: #a7f3d0;
+    filter: drop-shadow(0 0 8px rgba(39, 174, 96, 0.8));
+}
+
+[data-theme="dark"] .room-block {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+[data-theme="dark"] .room-block.classroom, [data-theme="dark"] .room-block.class, [data-theme="dark"] .room-block.large-classroom {
+    background: #60a5fa; color: #111827;
+}
+[data-theme="dark"] .room-block.lab, [data-theme="dark"] .room-block.lab-room {
+    background: #34d399; color: #111827;
+}
+[data-theme="dark"] .room-block.washroom {
+    background: #f87171; color: #111827;
+}
+[data-theme="dark"] .legend-color.class, [data-theme="dark"] .legend-box.class { background: #60a5fa; }
+[data-theme="dark"] .legend-color.lab, [data-theme="dark"] .legend-box.lab { background: #34d399; }
+[data-theme="dark"] .legend-color.washroom, [data-theme="dark"] .legend-box.washroom { background: #f87171; }
+[data-theme="dark"] .legend-color.faculty, [data-theme="dark"] .legend-box.faculty { background: #fbbf24; }
+[data-theme="dark"] .legend-color.lift, [data-theme="dark"] .legend-box.lift { background: #f472b6; }
+
+
 /* ============================================
    BASE STYLES
    ============================================ */
@@ -119,7 +168,12 @@ body {
     display: flex;
     flex-direction: column;
     padding-top: 90px;
+    /* Removed the color transitions to use flip animation on the main content instead */
 }
+
+/* ============================================
+   THEME ANIMATION CLASSES
+   ============================================ */
 
 .main-content {
     flex: 1;
@@ -373,7 +427,7 @@ body {
     height: 85px;
     position: absolute;
     transform: rotate(-45deg);
-    background-color: var(--mitwpu-white);
+    background-color: var(--modal-bg);
 }
 
 .icon-line {
@@ -985,14 +1039,14 @@ body {
 }
 
 /* Washrooms */
-.room-poly.fill-blue {
-    fill: #0d47a1;
+.room-poly.fill-red {
+    fill: #c0392b; /* Fixed to match legend in light mode */
     color: white;
 }
 
 /* Classrooms */
-.room-poly.fill-teal {
-    fill: #26a69a;
+.room-poly.fill-blue {
+    fill: #0d47a1;
     color: white;
 }
 
@@ -1003,6 +1057,10 @@ body {
 }
 
 /* Labs */
+.room-poly.fill-teal {
+    fill: #26a69a;
+    color: white;
+}
 
 .room-poly {
     fill: #ecf0f1;

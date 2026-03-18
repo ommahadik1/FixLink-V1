@@ -156,7 +156,7 @@ function renderGroundFloor(container, rooms, isAdmin = false) {
         else if (isInProgress) className += ' in-progress';
 
         const attrs = room ?
-            `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom('${roomNum}', ${roomId})"` :
+            `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom('${roomNum}', ${roomId}, null, '${type}')"` :
             'class="room-disabled"';
 
         let circleHtml = '';
@@ -318,7 +318,7 @@ function renderDetailedLayout(container, rooms, floorLevel, isAdmin = false) {
         const roomName = room ? (room.name || roomNum) : roomNum;
 
         const attrs = room ?
-            `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom('${roomNum}', ${roomId}, '${roomName.replace(/'/g, "\\'")}')"` :
+            `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom('${roomNum}', ${roomId}, '${roomName.replace(/'/g, "\\'")}', '${type}')"` :
             'class="room-disabled"';
 
         // Use provided label OR room number
@@ -470,7 +470,7 @@ function renderGenericFloor(container, rooms) {
                  data-room="${room.number}" 
                  data-room-id="${room.id}"
                  data-type="${room.room_type}"
-                 onclick="selectRoom('${room.number}', ${room.id}, '${(room.name || room.number).replace(/'/g, "\\'")}')">
+                 onclick="selectRoom('${room.number}', ${room.id}, '${(room.name || room.number).replace(/'/g, "\\'")}', '${room.room_type}')">
                 <span class="room-label">${room.number}</span>
             </div>
         `;
@@ -498,7 +498,7 @@ function renderGenericFloor(container, rooms) {
 // ============================================
 // SELECT ROOM
 // ============================================
-function selectRoom(roomNumber, roomId, roomName) {
+function selectRoom(roomNumber, roomId, roomName, roomType) {
     // Update hidden input
     const roomInput = document.getElementById('room_id');
     if (roomInput) {
@@ -532,8 +532,79 @@ function selectRoom(roomNumber, roomId, roomName) {
         if (poly) poly.classList.add('selected');
     }
 
-    // Load assets for this room
+    // Load dynamic form fields
     loadAssets(roomId);
+    updateIssueTypes(roomType || 'unknown');
+}
+
+// ============================================
+// UPDATE ISSUE TYPES (CONTEXT-AWARE)
+// ============================================
+const DYNAMIC_ISSUE_TYPES = {
+    'lift': [
+        { value: 'lights', label: 'Lights' },
+        { value: 'door_stuck', label: 'Door stuck' },
+        { value: 'lift_not_working', label: 'Lift not working' },
+        { value: 'lift_fan', label: 'Lift fan' }
+    ],
+    'class': [
+        { value: 'chairs', label: 'Chairs' },
+        { value: 'tables', label: 'Tables' },
+        { value: 'power_socket', label: 'Power socket' },
+        { value: 'projector', label: 'Projector' },
+        { value: 'projector_white_screen', label: 'Projector White Screen' },
+        { value: 'black_board', label: 'Black Board' },
+        { value: 'left_tv', label: 'Left TV' },
+        { value: 'right_tv', label: 'Right TV' },
+        { value: 'fans', label: 'Fans' },
+        { value: 'lights', label: 'Lights' }
+    ],
+    'lab': [
+        { value: 'tables', label: 'Tables' },
+        { value: 'chairs', label: 'Chairs' },
+        { value: 'computers', label: 'Computers' },
+        { value: 'projector', label: 'Projector' },
+        { value: 'projector_white_screen', label: 'Projector White Screen' },
+        { value: 'lights', label: 'Lights' },
+        { value: 'ac', label: 'AC' },
+        { value: 'fans', label: 'Fans' }
+    ],
+    'washroom': [
+        { value: 'toilet', label: 'Toilet' },
+        { value: 'toilet_stall', label: 'Toilet stall' },
+        { value: 'water', label: 'Water' },
+        { value: 'plumbing', label: 'Plumbing' },
+        { value: 'cleanliness', label: 'Cleanliness' }
+    ],
+    // Fallback for faculty/management/breakout/unknown rooms
+    'default': [
+        { value: 'electrical', label: 'Electrical Issue' },
+        { value: 'cleaning', label: 'Cleaning Required' },
+        { value: 'furniture', label: 'Furniture Damage' },
+        { value: 'ac', label: 'Air Conditioning' },
+        { value: 'lights', label: 'Lighting' },
+        { value: 'other', label: 'Other' }
+    ]
+};
+
+function updateIssueTypes(roomType) {
+    const issueSelect = document.getElementById('issue_type');
+    if (!issueSelect) return;
+
+    // Use requested type array, or fallback to default
+    const optionsArray = DYNAMIC_ISSUE_TYPES[roomType] || DYNAMIC_ISSUE_TYPES['default'];
+
+    // Clear and build new options
+    issueSelect.innerHTML = '<option value="">Select Issue Type</option>';
+    optionsArray.forEach(issue => {
+        const option = document.createElement('option');
+        option.value = issue.value;
+        option.textContent = issue.label;
+        issueSelect.appendChild(option);
+    });
+
+    // Enable the select
+    issueSelect.disabled = false;
 }
 
 // ============================================
@@ -613,19 +684,48 @@ function handleFormSubmit(e) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-        .then(response => response.json())
+        .then(async response => {
+            const isJson = response.headers.get('content-type')?.includes('application/json');
+            const data = isJson ? await response.json() : null;
+
+            if (!response.ok) {
+                // Handle session expiration (401)
+                if (response.status === 401) {
+                    showErrors(['Session expired. Redirecting to login...']);
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    return;
+                }
+                
+                // Handle other errors (400, 500)
+                if (data && data.errors) {
+                    showErrors(data.errors);
+                } else {
+                    showErrors(['Server error (' + response.status + '). Please try again later.']);
+                }
+                throw new Error('Server responded with ' + response.status);
+            }
+
+            return data;
+        })
         .then(data => {
+            if (!data) return; // Already handled error above
+
             if (data.success) {
                 showSuccessModal(data.ticket_id);
                 form.reset();
                 resetRoomSelection();
             } else {
-                showErrors(data.errors || ['An error occurred']);
+                showErrors(data.errors || ['An error occurred during submission']);
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showErrors(['Network error. Please try again.']);
+            console.error('Submission error:', error);
+            // Only show network error if it's actually a network issue (not caught above)
+            if (!errorMessage.textContent || errorMessage.textContent === '') {
+                showErrors(['Network error or connection lost. Please check your internet.']);
+            }
         })
         .finally(() => {
             if (submitBtn) {

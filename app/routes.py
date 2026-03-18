@@ -139,31 +139,55 @@ def submit_report():
     
     try:
         # Create ticket
+        # Ensure IDs are valid integers
+        try:
+            r_id = int(room_id)
+        except (TypeError, ValueError):
+            errors.append('Invalid Room ID')
+            
+        a_id = None
+        if asset_id:
+            try:
+                a_id = int(asset_id)
+            except (TypeError, ValueError):
+                errors.append('Invalid Asset ID')
+        
+        if errors:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'errors': errors}), 400
+            user = User.query.get(session['user_id'])
+            building = Building.query.filter_by(name='Vyas').first()
+            return render_template('report.html', user=user, building=building, errors=errors), 400
+
         ticket = Ticket(
-            room_id=int(room_id),
-            asset_id=int(asset_id) if asset_id else None,
+            room_id=r_id,
+            asset_id=a_id,
             issue_type=issue_type,
             description=description,
             image_filename=image_filename,
             reporter_id=user.id,
             reporter_name=reporter_name,
             prn=prn,
-            reporter_email=reporter_email.lower(),
+            reporter_email=reporter_email.lower() if reporter_email else 'unknown@mitwpu.edu.in',
             status=Ticket.STATUS_OPEN
         )
         
         db.session.add(ticket)
         
         # If asset specified, mark it as broken
-        if asset_id:
-            asset = Asset.query.get(int(asset_id))
+        if a_id:
+            asset = Asset.query.get(a_id)
             if asset:
                 asset.status = Asset.STATUS_BROKEN
         
         db.session.commit()
         
         # Trigger EmailJS notification for ticket creation
-        send_ticket_email(ticket, action='created')
+        # (Consider moving this to a background task in production)
+        try:
+            send_ticket_email(ticket, action='created')
+        except Exception as email_err:
+            current_app.logger.error(f"Email failed: {str(email_err)}")
         
         # Return JSON for AJAX, redirect for form submission
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -176,14 +200,18 @@ def submit_report():
         return render_template('report.html', 
                              success=True, 
                              ticket_id=ticket.id,
+                             user=user,
                              building=Building.query.filter_by(name='Vyas').first())
         
     except Exception as e:
         db.session.rollback()
         error_msg = str(e)
+        current_app.logger.error(f"Error submitting report: {error_msg}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'success': False, 'errors': [error_msg]}), 500
-        return render_template('report.html', errors=[error_msg]), 500
+        user = User.query.get(session['user_id'])
+        building = Building.query.filter_by(name='Vyas').first()
+        return render_template('report.html', user=user, building=building, errors=[error_msg]), 500
 
 
 # API Endpoints

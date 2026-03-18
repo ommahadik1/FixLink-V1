@@ -132,11 +132,8 @@
                             </h6>
                             <div class="mb-3">
                                 <label for="issue_type" class="form-label">Issue Type *</label>
-                                <select class="form-select" id="issue_type" name="issue_type" required>
-                                    <option value="">Select Issue Type</option>
-                                    {% for value, label in issue_types %}
-                                    <option value="{{ value }}">{{ label }}</option>
-                                    {% endfor %}
+                                <select class="form-select" id="issue_type" name="issue_type" required disabled>
+                                    <option value="">Select a Room First</option>
                                 </select>
                             </div>
                             <div class="mb-3">

@@ -34,6 +34,9 @@ def user_login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
+            # Handle AJAX requests by returning 401 JSON instead of redirect
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'errors': ['Session expired. Please log in again.']}), 401
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
