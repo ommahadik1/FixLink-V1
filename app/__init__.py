@@ -21,15 +21,24 @@ def create_app(config_name=None):
     
     # Configuration — all secrets come from .env
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-production')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-        'DATABASE_URL', 'sqlite:///vyas_tracker.db'
-    )
+    # Use /tmp for sqlite in serverless environments if no DB URL is provided
+    is_vercel = os.environ.get('VERCEL') == '1'
+    default_db = 'sqlite:////tmp/vyas_tracker.db' if is_vercel else 'sqlite:///vyas_tracker.db'
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', default_db)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Uploads on Vercel should ideally use external storage. For making the app bootable:
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+    if is_vercel:
+        app.config['UPLOAD_FOLDER'] = '/tmp/uploads'
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     
-    # Ensure upload directory exists
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # Ensure upload directory exists - catch OSError for read-only filesystems
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except OSError:
+        pass
     
     # Initialize extensions
     db.init_app(app)
