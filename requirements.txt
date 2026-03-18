@@ -4,3 +4,4 @@ Werkzeug
 Pillow
 qrcode
 python-dotenv
+requests
