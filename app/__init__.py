@@ -32,6 +32,12 @@ def create_app(config_name=None):
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
+    # Fix for Serverless + Postgres connection drops (500 errors / hanging on login)
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
+    
     # Uploads on Vercel should ideally use external storage. For making the app bootable:
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     if is_vercel:
