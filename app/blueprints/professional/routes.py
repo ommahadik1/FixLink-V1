@@ -6,9 +6,9 @@ from functools import wraps
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, current_app
 from werkzeug.utils import secure_filename
-from . import db
-from .models import Professional, Ticket, HelpRequest, ChatMessage, Room, Asset, User, Notification
-from .utils import allowed_file
+from ... import db
+from ...models import Professional, Ticket, HelpRequest, ChatMessage, Room, Asset, User, Notification
+from ...utils import allowed_file
 
 professional_bp = Blueprint('professional', __name__, url_prefix='/professional')
 

@@ -7,8 +7,8 @@ Password: Taha10vesgono!
 from functools import wraps
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db
-from .models import User, Professional
+from ... import db
+from ...models import User, Professional
 
 superadmin_bp = Blueprint('superadmin', __name__)
 

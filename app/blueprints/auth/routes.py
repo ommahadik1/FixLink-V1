@@ -6,9 +6,9 @@ from functools import wraps
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
-from . import db
-from .models import User, Professional
-from .utils import send_verification_email, send_password_reset_email, ALLOWED_EXTENSIONS, allowed_file
+from ... import db
+from ...models import User, Professional
+from ...utils import send_verification_email, send_password_reset_email, ALLOWED_EXTENSIONS, allowed_file
 
 auth_bp = Blueprint('auth', __name__)
 

@@ -5,9 +5,9 @@ from functools import wraps
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash
 from sqlalchemy import or_
-from . import db
-from .models import Building, Floor, Room, Asset, Ticket, User, Professional, HelpRequest, ChatMessage
-from .utils import send_ticket_email
+from ... import db
+from ...models import Building, Floor, Room, Asset, Ticket, User, Professional, HelpRequest, ChatMessage
+from ...utils import send_ticket_email
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -600,7 +600,7 @@ def assign_ticket(ticket_id):
             ticket.status = Ticket.STATUS_ASSIGNED
             db.session.commit()
             
-            from .socket_events import notify_professional_assigned
+            from ...socket_events import notify_professional_assigned
             notify_professional_assigned(ticket, professional)
             
             flash(f'Ticket #{ticket_id} assigned to {professional.name}!', 'success')
@@ -683,7 +683,7 @@ def api_assign_ticket(ticket_id):
         ticket.status = Ticket.STATUS_ASSIGNED
         db.session.commit()
         
-        from .socket_events import notify_professional_assigned
+        from ...socket_events import notify_professional_assigned
         notify_professional_assigned(ticket, professional)
         
         return jsonify({
@@ -755,7 +755,7 @@ def respond_to_help_request(help_request_id):
             help_request.admin_id = admin.id
             help_request.responded_at = datetime.utcnow()
             
-            from .socket_events import notify_help_request_approved
+            from ...socket_events import notify_help_request_approved
             notify_help_request_approved(help_request)
             
         else:
@@ -763,7 +763,7 @@ def respond_to_help_request(help_request_id):
             help_request.admin_id = admin.id
             help_request.responded_at = datetime.utcnow()
             
-            from .socket_events import notify_help_request_rejected
+            from ...socket_events import notify_help_request_rejected
             notify_help_request_rejected(help_request)
         
         db.session.commit()

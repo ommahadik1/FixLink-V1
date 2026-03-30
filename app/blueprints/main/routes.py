@@ -5,10 +5,10 @@ import os
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, current_app, session, redirect, url_for
 from werkzeug.utils import secure_filename
-from . import db
-from .models import Building, Floor, Room, Asset, Ticket, User, Notification
-from .utils import send_ticket_email, ALLOWED_EXTENSIONS, allowed_file
-from .auth_routes import user_login_required
+from ... import db
+from ...models import Building, Floor, Room, Asset, Ticket, User, Notification
+from ...utils import send_ticket_email, ALLOWED_EXTENSIONS, allowed_file
+from ..auth.routes import user_login_required
 
 main_bp = Blueprint('main', __name__)
 

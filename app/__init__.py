@@ -53,11 +53,11 @@ def create_app(config_name=None):
     socketio = init_socketio(app)
     
     # Register blueprints
-    from .routes import main_bp
-    from .admin_routes import admin_bp
-    from .auth_routes import auth_bp
-    from .professional_routes import professional_bp
-    from .superadmin_routes import superadmin_bp
+    from .blueprints.main import main_bp
+    from .blueprints.admin import admin_bp
+    from .blueprints.auth import auth_bp
+    from .blueprints.professional import professional_bp
+    from .blueprints.superadmin import superadmin_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -65,82 +65,9 @@ def create_app(config_name=None):
     app.register_blueprint(professional_bp)
     app.register_blueprint(superadmin_bp)
     
-    # Create database tables
-    with app.app_context():
-        db.create_all()
-        
-        # Ensure reporter_id column exists (safe migration for existing DBs)
-        from sqlalchemy import inspect as sa_inspect
-        inspector = sa_inspect(db.engine)
-        ticket_columns = [col['name'] for col in inspector.get_columns('tickets')]
-        if 'reporter_id' not in ticket_columns:
-            db.session.execute(db.text(
-                'ALTER TABLE tickets ADD COLUMN reporter_id INTEGER REFERENCES users(id)'
-            ))
-            db.session.commit()
-
-        # Ensure profile_photo column exists on users table
-        user_columns = [col['name'] for col in inspector.get_columns('users')]
-        if 'profile_photo' not in user_columns:
-            db.session.execute(db.text(
-                'ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255)'
-            ))
-            db.session.commit()
-        
-        # Ensure new ticket columns exist for professional assignment
-        ticket_columns = [col['name'] for col in inspector.get_columns('tickets')]
-        new_ticket_columns = [
-            ('assigned_professional_id', 'INTEGER REFERENCES professionals(id)'),
-            ('complexity', 'VARCHAR(20)'),
-            ('time_limit_hours', 'INTEGER'),
-            ('deadline_datetime', 'DATETIME'),
-            ('job_started_at', 'DATETIME'),
-            ('job_completed_at', 'DATETIME'),
-            ('completion_photo_filename', 'VARCHAR(255)'),
-            ('cancellation_reason', 'TEXT'),
-            ('cancelled_at', 'DATETIME'),
-            ('cancelled_by_professional_id', 'INTEGER REFERENCES professionals(id)')
-        ]
-        for col_name, col_type in new_ticket_columns:
-            if col_name not in ticket_columns:
-                db.session.execute(db.text(
-                    f'ALTER TABLE tickets ADD COLUMN {col_name} {col_type}'
-                ))
-                db.session.commit()
-        
-        # Ensure professional columns exist
-        prof_columns = [col['name'] for col in inspector.get_columns('professionals')]
-        new_prof_columns = [
-            ('username', 'VARCHAR(50)'),
-        ]
-        for col_name, col_type in new_prof_columns:
-            if col_name not in prof_columns:
-                db.session.execute(db.text(
-                    f'ALTER TABLE professionals ADD COLUMN {col_name} {col_type}'
-                ))
-                db.session.commit()
-            
-        # Create default admin user from environment variables
-        from .models import User
-        admin_email = os.environ.get('ADMIN_EMAIL')
-        admin_password = os.environ.get('ADMIN_PASSWORD')
-        if admin_email and admin_password:
-            if not User.query.filter_by(email=admin_email).first():
-                admin_user = User(
-                    name='Admin',
-                    email=admin_email,
-                    is_admin=True,
-                    is_verified=True
-                )
-                admin_user.set_password(admin_password)
-                db.session.add(admin_user)
-                db.session.commit()
-                logger.info(f'Default admin user created: {admin_email}')
-        else:
-            logger.warning(
-                'ADMIN_EMAIL and ADMIN_PASSWORD are not set. '
-                'No default admin user will be created. Set these in your .env file.'
-            )
+    # Initialize database and run migrations
+    from .database import init_db
+    init_db(app)
     
     # Register Jinja filters
     @app.template_filter('ist')
