@@ -1,0 +1,20 @@
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 526-573-687
+(8149) wsgi starting up on http://0.0.0.0:5000
+============================================================
+MIT-WPU Vyas Smart-Room Maintenance Tracker
+============================================================
+Server: http://localhost:5000
+Student Portal: http://localhost:5000/report
+Admin Dashboard: http://localhost:5000/admin
+============================================================
+============================================================
+MIT-WPU Vyas Smart-Room Maintenance Tracker
+============================================================
+Server: http://localhost:5000
+Student Portal: http://localhost:5000/report
+Admin Dashboard: http://localhost:5000/admin
+============================================================
+/usr/lib/python3.14/multiprocessing/resource_tracker.py:396: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown: {'/mp-1bro__fg'}
+  warnings.warn(

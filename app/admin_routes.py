@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, jsonify, session, redirec
 from sqlalchemy import or_
 from . import db
 from .models import Building, Floor, Room, Asset, Ticket, User, Professional, HelpRequest, ChatMessage
-from .email_utils import send_ticket_email
+from .utils import send_ticket_email
 
 admin_bp = Blueprint('admin', __name__)
 

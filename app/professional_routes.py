@@ -8,7 +8,7 @@ from flask import Blueprint, render_template, request, jsonify, session, redirec
 from werkzeug.utils import secure_filename
 from . import db
 from .models import Professional, Ticket, HelpRequest, ChatMessage, Room, Asset, User, Notification
-from .file_utils import allowed_file
+from .utils import allowed_file
 
 professional_bp = Blueprint('professional', __name__, url_prefix='/professional')
 

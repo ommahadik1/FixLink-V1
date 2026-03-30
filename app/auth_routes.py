@@ -8,8 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from . import db
 from .models import User, Professional
-from .email_utils import send_verification_email, send_password_reset_email
-from .file_utils import ALLOWED_EXTENSIONS, allowed_file
+from .utils import send_verification_email, send_password_reset_email, ALLOWED_EXTENSIONS, allowed_file
 
 auth_bp = Blueprint('auth', __name__)
 
