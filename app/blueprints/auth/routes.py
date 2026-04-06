@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from ... import db, csrf
 from ...models import User, Professional
-from ...utils import send_verification_email, send_password_reset_email, ALLOWED_EXTENSIONS, allowed_file
+from ...utils import send_verification_email, send_password_reset_email, ALLOWED_EXTENSIONS, allowed_file, save_webapp_file, remove_webapp_file
 from ...decorators import user_login_required
 from ...api_utils import handle_api_errors, api_response
 from ...realtime import get_pusher
@@ -290,15 +290,14 @@ def upload_profile_photo():
     # Delete old photo if it exists
     if user.profile_photo:
         old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], user.profile_photo)
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        remove_webapp_file(old_path)
 
     # Save new photo
     filename = secure_filename(file.filename)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"profile_{user.id}_{timestamp}_{filename}"
     file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
+    save_webapp_file(file, file_path)
 
     user.profile_photo = filename
     db.session.commit()
@@ -315,8 +314,7 @@ def remove_profile_photo():
     user = User.query.get(session['user_id'])
     if user.profile_photo:
         old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], user.profile_photo)
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        remove_webapp_file(old_path)
         user.profile_photo = None
         db.session.commit()
     return api_response(message="Profile photo removed")

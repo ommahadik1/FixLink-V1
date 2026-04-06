@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, jsonify, current_app, ses
 from werkzeug.utils import secure_filename
 from ... import db
 from ...models import Building, Floor, Room, Asset, Ticket, User, Notification, Professional
-from ...utils import send_ticket_email, ALLOWED_EXTENSIONS, allowed_file
+from ...utils import send_ticket_email, ALLOWED_EXTENSIONS, allowed_file, save_webapp_file
 from ...decorators import user_login_required, login_required
 from ...api_utils import handle_api_errors, api_response
 
@@ -128,7 +128,7 @@ def submit_report():
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"{timestamp}_{filename}"
             file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+            save_webapp_file(file, file_path)
             image_filename = filename
     
     try:

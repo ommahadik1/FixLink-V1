@@ -8,7 +8,7 @@ from flask import Blueprint, render_template, request, jsonify, session, redirec
 from werkzeug.utils import secure_filename
 from ... import db
 from ...models import Professional, Ticket, HelpRequest, ChatMessage, Room, Asset, User, Notification
-from ...utils import allowed_file
+from ...utils import allowed_file, save_webapp_file
 from ...decorators import professional_login_required
 from ...api_utils import handle_api_errors, api_response
 
@@ -240,7 +240,7 @@ def complete_task(ticket_id):
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"completion_{ticket_id}_{timestamp}_{filename}"
             file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+            save_webapp_file(file, file_path)
             completion_photo = filename
     
     ticket.status = Ticket.STATUS_FIXED

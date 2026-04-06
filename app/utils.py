@@ -28,6 +28,43 @@ def allowed_file(filename):
     """Return True if *filename* has an allowed image extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+def save_webapp_file(file, file_path):
+    """
+    Saves a file to the filesystem, but skips the operation on Vercel
+    to prevent "Read-only filesystem" errors.
+    """
+    if os.environ.get('VERCEL'):
+        logger.warning(f"Vercel detected. Skipping local file save to: {file_path}")
+        return True  # Return success to prevent caller from 500-crashing
+    
+    try:
+        # Ensure directory exists locally
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        file.save(file_path)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to save file locally: {str(e)}")
+        return False
+
+
+def remove_webapp_file(file_path):
+    """
+    Removes a file from the filesystem, but skips the operation on Vercel
+    to prevent "Read-only filesystem" errors.
+    """
+    if os.environ.get('VERCEL'):
+        logger.warning(f"Vercel detected. Skipping local file remove for: {file_path}")
+        return True
+    
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to remove file locally: {str(e)}")
+        return False
+
 # ==============================================================================
 # Email Utilities
 # ==============================================================================
