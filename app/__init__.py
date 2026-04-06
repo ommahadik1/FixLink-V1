@@ -50,6 +50,7 @@ def create_app(config_name=None):
             PERMANENT_SESSION_LIFETIME=3600,  # 1 hour
             WTF_CSRF_SSL_STRICT=False,       # Let Vercel handle SSL termination
             WTF_CSRF_TIME_LIMIT=None,        # No timeout for serverless cold starts
+            WTF_CSRF_ENABLED=True,           # Explicitly enabled
         )
         # Trust Vercel's proxy headers (Vercel uses multiple layers of proxy)
         from werkzeug.middleware.proxy_fix import ProxyFix
