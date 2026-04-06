@@ -62,8 +62,9 @@ def create_app(config_name=None):
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     
-    # Ensure upload directory exists
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # Ensure upload directory exists (Skip on Vercel read-only filesystem)
+    if not os.environ.get('VERCEL'):
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
     # Initialize extensions
     db.init_app(app)
@@ -86,7 +87,7 @@ def create_app(config_name=None):
         storage_uri="memory://",
     )
     
-    # Initialize database and run migrations
+    # Initialize database and run migrations (Selective on Vercel)
     from .database import init_db
     init_db(app)
 
