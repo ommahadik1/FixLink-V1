@@ -48,6 +48,15 @@ def create_app(config_name=None):
                 'DATABASE_URL is not set. A persistent PostgreSQL (Supabase) '
                 'connection is required for the application to start.'
             )
+    
+    # Supabase Connection Hardening (especially for Vercel/SSL)
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        
+    # Add SSL mode if on Vercel and it's missing
+    if os.environ.get('VERCEL') and 'sslmode=' not in database_url:
+        database_url += '?sslmode=require'
+
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
