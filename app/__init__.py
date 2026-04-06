@@ -30,12 +30,28 @@ def create_app(config_name=None):
     # Configuration — all secrets come from .env
     secret_key = os.environ.get('SECRET_KEY')
     if not secret_key:
+        if os.environ.get('VERCEL'):
+            # Enforce secret key on Vercel for session stability
+            raise RuntimeError('SECRET_KEY must be set in Vercel Environment Variables for session stability.')
+        
         secret_key = secrets.token_hex(32)
         logger.warning(
             'SECRET_KEY is not set in environment. A temporary random key has been generated. '
             'Sessions will not persist across server restarts. Set SECRET_KEY in your .env file.'
         )
     app.config['SECRET_KEY'] = secret_key
+
+    # Vercel-specific session security
+    if os.environ.get('VERCEL'):
+        app.config.update(
+            SESSION_COOKIE_SECURE=True,
+            SESSION_COOKIE_HTTPONLY=True,
+            SESSION_COOKIE_SAMESITE='Lax',
+            PERMANENT_SESSION_LIFETIME=3600,  # 1 hour
+        )
+        # Trust Vercel's proxy headers
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
