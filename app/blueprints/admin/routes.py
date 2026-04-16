@@ -223,47 +223,103 @@ def users():
 @admin_bp.route('/analytics')
 @admin_required
 def analytics():
-    """Admin analytics and insights dashboard."""
-    # 1. Total Stats
-    total_tickets = Ticket.query.count()
-    fixed_tickets_count = Ticket.query.filter_by(status=Ticket.STATUS_FIXED).count()
+    """Admin analytics and insights dashboard with dynamic filtering."""
+    # Get filters from request
+    period = request.args.get('period', 'monthly')
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
     
-    # 2. Tickets by Category
-    category_counts = db.session.query(
+    # Base Filters
+    query = Ticket.query
+    
+    # 1. Date Range Handling
+    now = datetime.utcnow()
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Ticket.created_at.between(start_date, end_date))
+        except ValueError:
+            pass # Fallback to default if invalid dates
+    elif period == 'daily':
+        # Default to last 14 days for daily
+        start_date = now - timedelta(days=14)
+        query = query.filter(Ticket.created_at >= start_date)
+    elif period == 'weekly':
+        # Default to last 12 weeks
+        start_date = now - timedelta(weeks=12)
+        query = query.filter(Ticket.created_at >= start_date)
+    else: # Default monthly
+        start_date = now - timedelta(days=180)
+        query = query.filter(Ticket.created_at >= start_date)
+
+    # 2. Total/Fixed Stats (Respecting filters)
+    total_tickets = query.count()
+    fixed_tickets_count = query.filter(Ticket.status == Ticket.STATUS_FIXED).count()
+    
+    # 3. Tickets by Category (Respecting filters)
+    raw_category_counts = db.session.query(
         Ticket.issue_type, func.count(Ticket.id)
-    ).group_by(Ticket.issue_type).all()
+    ).filter(Ticket.id.in_(db.session.query(Ticket.id).filter(Ticket.created_at >= start_date))).group_by(Ticket.issue_type).all()
     
-    # 3. Average Resolution Time (Fixed tickets)
+    # Re-use your consolidated grouping logic
+    category_map = {
+        'electrical': 'Electrical & Utilities', 'ac': 'Electrical & Utilities', 
+        'lighting': 'Electrical & Utilities', 'light_broken': 'Electrical & Utilities',
+        'lift_breakdown': 'Electrical & Utilities', 'lift_not_working': 'Electrical & Utilities',
+        'projector': 'IT & AV Systems', 'computer': 'IT & AV Systems',
+        'plumbing': 'Plumbing', 'furniture': 'Furniture & Carpentry', 
+        'chairs': 'Furniture & Carpentry', 'door_error': 'Furniture & Carpentry',
+    }
+    
+    consolidated_data = {}
+    for issue_type, count in raw_category_counts:
+        group_name = category_map.get(issue_type, 'Other')
+        consolidated_data[group_name] = consolidated_data.get(group_name, 0) + count
+    
+    # 4. Success Rate
+    success_rate = round((fixed_tickets_count / total_tickets * 100), 1) if total_tickets > 0 else 0
+    
+    # 5. Average Resolution Time (Filtered)
     avg_res_time = 0
-    fixed_tickets = Ticket.query.filter(
+    fixed_tickets_q = query.filter(
         Ticket.status == Ticket.STATUS_FIXED,
         Ticket.fixed_at.isnot(None)
     ).all()
     
-    if fixed_tickets:
-        durations = [(t.fixed_at - t.created_at).total_seconds() for t in fixed_tickets]
+    if fixed_tickets_q:
+        durations = [(t.fixed_at - t.created_at).total_seconds() for t in fixed_tickets_q]
         avg_res_time = round(sum(durations) / (3600 * len(durations)), 1) # in hours
 
-    # 4. Performance: Success Rate
-    success_rate = round((fixed_tickets_count / total_tickets * 100), 1) if total_tickets > 0 else 0
-
-    # 5. Monthly Trend (Last 6 Months)
-    six_months_ago = datetime.utcnow() - timedelta(days=180)
-    monthly_trend_query = db.session.query(
-        func.to_char(Ticket.created_at, 'YYYY-MM').label('month'),
+    # 6. Trend Grouping Based on Period
+    if period == 'daily':
+        fmt = 'YYYY-MM-DD'
+    elif period == 'weekly':
+        fmt = 'IYYY-"W"IW'
+    else:
+        fmt = 'YYYY-MM'
+        
+    trend_query = db.session.query(
+        func.to_char(Ticket.created_at, fmt).label('label'),
         func.count(Ticket.id)
-    ).filter(Ticket.created_at >= six_months_ago).group_by('month').order_by('month').all()
+    ).filter(Ticket.id.in_(db.session.query(Ticket.id).filter(Ticket.created_at >= (start_date if 'start_date' in locals() else now - timedelta(days=180))))).group_by('label').order_by('label').all()
     
-    # Convert Row objects to serializable lists
-    monthly_trend = [list(row) for row in monthly_trend_query]
+    trend_data = [list(row) for row in trend_query]
+
+    # Current Risks (Always current)
+    critical_assets = get_critical_assets(5)
 
     return render_template('admin_analytics.html',
                           total_tickets=total_tickets,
                           fixed_count=fixed_tickets_count,
-                          category_data=dict(category_counts),
+                          category_data=consolidated_data,
                           avg_res_time=avg_res_time,
                           success_rate=success_rate,
-                          monthly_trend=monthly_trend)
+                          monthly_trend=trend_data,
+                          period=period,
+                          start_date=start_date_str,
+                          end_date=end_date_str,
+                          critical_assets=critical_assets)
 
 
 @admin_bp.route('/users/<int:user_id>/edit', methods=['POST'])
@@ -913,14 +969,8 @@ def respond_to_help_request(help_request_id):
 
 # ==================== ANALYTICS & REPORTS ====================
 
-@admin_bp.route('/analytics')
-@admin_required
-def analytics_dashboard():
-    """View advanced analytics and predictive maintenance dashboard."""
-    return render_template('admin/analytics.html',
-                         tech_stats=get_technician_efficiency(),
-                         system_trends=get_system_trends(7),
-                         critical_assets=get_critical_assets(10))
+
+# Merged analytics into single route /analytics (Line 223)
 
 @admin_bp.route('/reports/export/<string:fmt>')
 @admin_required
@@ -930,8 +980,20 @@ def export_report(fmt):
     from flask import make_response
     from io import BytesIO, StringIO
     
-    # Fetch all tickets for report
-    tickets = Ticket.query.order_by(Ticket.created_at.desc()).all()
+    # Fetch filters for report
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    query = Ticket.query
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Ticket.created_at.between(start_date, end_date))
+        except ValueError:
+            pass
+            
+    tickets = query.order_by(Ticket.created_at.desc()).all()
     data = [t.to_dict() for t in tickets]
     if not data:
         flash('No data available for export.', 'info')
@@ -955,52 +1017,237 @@ def export_report(fmt):
     
     elif fmt == 'pdf':
         from fpdf import FPDF
+        import os
+        from flask import current_app
+        
+        # Calculate Advanced Analytics for the report
+        tech_stats = get_technician_efficiency()
+        critical_assets = get_critical_assets(5)
+        
+        # Global branding colors
+        BRAND_BLUE = (11, 77, 140)
+        TEXT_DARK = (40, 40, 40)
+        TEXT_MUTED = (100, 100, 100)
+        SUCCESS_GREEN = (40, 167, 69)
+        DANGER_RED = (220, 53, 69)
         
         class PDF(FPDF):
             def header(self):
+                # Branding Logo
+                logo_path = os.path.join(current_app.root_path, 'static', 'images', 'logo-lm.png')
+                if os.path.exists(logo_path):
+                    self.image(logo_path, 10, 8, 33)
+                
                 self.set_font('helvetica', 'B', 15)
-                self.cell(0, 10, 'MIT-WPU FixLink Maintenance Report', border=False, align='C')
+                self.set_text_color(*BRAND_BLUE)
+                self.cell(80) # Move to the right
+                self.cell(110, 10, 'FixLink: Maintenance Performance Report', border=0, align='R')
+                self.ln(5)
+                self.cell(80)
+                self.set_font('helvetica', '', 9)
+                self.set_text_color(*TEXT_MUTED)
+                self.cell(110, 10, 'MIT-WPU Smart-Room Maintenance Ecosystem', border=0, align='R')
+                self.ln(15)
+                # Line break
+                self.set_draw_color(*BRAND_BLUE)
+                self.set_line_width(0.5)
+                self.line(10, 32, 200, 32)
                 self.ln(10)
-                self.set_font('helvetica', 'I', 10)
-                self.cell(0, 10, f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}', border=False, align='C')
-                self.ln(20)
 
             def footer(self):
                 self.set_y(-15)
                 self.set_font('helvetica', 'I', 8)
-                self.cell(0, 10, f'Page {self.page_no()}/{{nb}}', align='C')
+                self.set_text_color(*TEXT_MUTED)
+                self.cell(0, 10, f'MIT-WPU FixLink Confidential | Page {self.page_no()}/{{nb}}', align='C')
+                self.cell(0, 10, f'Report Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}', align='R')
+
+            def chapter_title(self, label):
+                self.set_font('helvetica', 'B', 12)
+                self.set_text_color(*BRAND_BLUE)
+                self.set_fill_color(240, 245, 255)
+                self.cell(0, 10, f'  {label}', ln=True, fill=True)
+                self.ln(4)
 
         pdf = PDF()
+        pdf.alias_nb_pages()
         pdf.add_page()
-        pdf.set_font('helvetica', '', 10)
         
-        # Summary Section
-        pdf.set_font('helvetica', 'B', 12)
-        pdf.cell(0, 10, 'Summary Statistics', ln=True)
-        pdf.set_font('helvetica', '', 10)
-        pdf.cell(0, 7, f'Total Tickets: {len(df)}', ln=True)
-        pdf.cell(0, 7, f'Critical Assets Identified: {len(get_critical_assets())}', ln=True)
-        pdf.ln(10)
+        # --- SECTION 1: EXECUTIVE SUMMARY ---
+        pdf.chapter_title('Executive Summary')
         
-        # Table Header
+        # KPI Boxes
+        total_count = len(df)
+        fixed_count = len(df[df['status'] == 'fixed'])
+        success_rate = round((fixed_count / total_count * 100), 1) if total_count > 0 else 0
+        
         pdf.set_font('helvetica', 'B', 10)
-        pdf.set_fill_color(200, 220, 255)
-        pdf.cell(20, 10, 'ID', border=1, fill=True)
-        pdf.cell(40, 10, 'Room', border=1, fill=True)
-        pdf.cell(40, 10, 'Status', border=1, fill=True)
-        pdf.cell(90, 10, 'Issue', border=1, fill=True)
-        pdf.ln()
+        pdf.set_text_color(*TEXT_DARK)
         
-        # Table Rows
-        pdf.set_font('helvetica', '', 9)
-        for _, row in df.head(50).iterrows(): # Limit to first 50 for performance
-            pdf.cell(20, 8, str(row['id']), border=1)
-            pdf.cell(40, 8, str(row['room_number']), border=1)
-            pdf.cell(40, 8, str(row['status']), border=1)
-            pdf.cell(90, 8, str(row['issue_type']), border=1)
+        # Stats Row
+        col_width = (pdf.w - 20) / 3
+        pdf.cell(col_width, 10, 'Total Requests', align='C')
+        pdf.cell(col_width, 10, 'Completion Rate', align='C')
+        pdf.cell(col_width, 10, 'Critical Assets', align='C')
+        pdf.ln(8)
+        
+        pdf.set_font('helvetica', 'B', 16)
+        pdf.set_text_color(*BRAND_BLUE)
+        pdf.cell(col_width, 10, str(total_count), align='C')
+        pdf.cell(col_width, 10, f'{success_rate}%', align='C')
+        pdf.cell(col_width, 10, str(len(critical_assets)), align='C')
+        pdf.ln(15)
+        
+        # --- SECTION 2: TECHNICIAN PERFORMANCE ---
+        if tech_stats:
+            pdf.chapter_title('Technician Efficiency Overview')
+            pdf.set_font('helvetica', 'B', 9)
+            pdf.set_fill_color(245, 245, 245)
+            pdf.cell(60, 8, ' Professional Name', border=1, fill=True)
+            pdf.cell(40, 8, ' Category', border=1, fill=True)
+            pdf.cell(30, 8, ' Closed Jobs', border=1, fill=True, align='C')
+            pdf.cell(60, 8, ' Avg. Resolution Time', border=1, fill=True, align='C')
             pdf.ln()
             
-        response = make_response(pdf.output())
+            pdf.set_font('helvetica', '', 9)
+            pdf.set_text_color(*TEXT_DARK)
+            for tech in tech_stats[:5]: # Top 5
+                pdf.cell(60, 8, f" {tech['name']}", border=1)
+                pdf.cell(40, 8, f" {tech['category'].title()}", border=1)
+                pdf.cell(30, 8, str(tech['fixed_count']), border=1, align='C')
+                pdf.cell(60, 8, f"{tech['avg_ttr_hours']} hours", border=1, align='C')
+                pdf.ln()
+            pdf.ln(10)
+
+        # --- SECTION 3: SERVICE CATEGORY DISTRIBUTION ---
+        pdf.chapter_title('Service Category Distribution & Visual Analysis')
+        category_map = {
+            'electrical': 'Electrical & Utilities', 'ac': 'Electrical & Utilities', 
+            'lighting': 'Electrical & Utilities', 'light_broken': 'Electrical & Utilities',
+            'lift_breakdown': 'Electrical & Utilities', 'lift_not_working': 'Electrical & Utilities',
+            'projector': 'IT & AV Systems', 'computer': 'IT & AV Systems',
+            'plumbing': 'Plumbing', 'furniture': 'Furniture & Carpentry', 
+            'chairs': 'Furniture & Carpentry', 'door_error': 'Furniture & Carpentry',
+        }
+        
+        consolidated_counts = {}
+        for _, row in df.iterrows():
+            group_name = category_map.get(row['issue_type'], 'Other')
+            consolidated_counts[group_name] = consolidated_counts.get(group_name, 0) + 1
+            
+        pdf.set_font('helvetica', 'B', 9)
+        pdf.set_fill_color(*BRAND_BLUE)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(70, 10, ' Category Group', border=1, fill=True)
+        pdf.cell(30, 10, ' Count', border=1, fill=True, align='C')
+        pdf.cell(40, 10, ' Distribution', border=1, fill=True, align='C')
+        pdf.ln()
+        
+        pdf.set_font('helvetica', '', 9)
+        pdf.set_text_color(*TEXT_DARK)
+        
+        # Prepare data for pie chart
+        sorted_cats = sorted(consolidated_counts.items(), key=lambda x: x[1], reverse=True)
+        labels = [c[0] for c in sorted_cats]
+        sizes = [c[1] for c in sorted_cats]
+        
+        for cat, count in sorted_cats:
+            pct = (count / total_count * 100) if total_count > 0 else 0
+            pdf.cell(70, 8, f" {cat}", border=1)
+            pdf.cell(30, 8, str(count), border=1, align='C')
+            pdf.cell(40, 8, f"{round(pct, 1)}%", border=1, align='C')
+            pdf.ln()
+            
+        # Generate Pie Chart using Matplotlib
+        import matplotlib.pyplot as plt
+        import io
+        plt.switch_backend('Agg') # Headless mode
+        
+        # Consistent color palette matching the dashboard
+        colors = ['#0b4d8c', '#ffcc00', '#28a745', '#dc3545', '#17a2b8', '#6610f2', '#fd7e14']
+        
+        fig, ax = plt.subplots(figsize=(6, 4))
+        wedges, texts, autotexts = ax.pie(sizes, labels=labels, autopct='%1.1f%%', 
+                                       colors=colors[:len(labels)], startangle=140,
+                                       textprops={'fontsize': 8})
+        plt.setp(autotexts, size=8, weight="bold", color="white")
+        ax.axis('equal')
+        plt.tight_layout()
+        
+        img_buf = io.BytesIO()
+        plt.savefig(img_buf, format='png', dpi=150)
+        img_buf.seek(0)
+        
+        # Insert Chart into PDF (positioned next to/below table)
+        pdf.ln(5)
+        # Use 140mm width (center it roughly)
+        pdf.image(img_buf, x=35, w=140)
+        plt.close(fig) # Cleanup
+        pdf.ln(10)
+
+        # --- SECTION 4: DETAILED TICKET LOG ---
+        pdf.chapter_title('Detailed Maintenance Log')
+        
+        # Table Header
+        pdf.set_font('helvetica', 'B', 9)
+        pdf.set_fill_color(*BRAND_BLUE)
+        pdf.set_text_color(255, 255, 255)
+        
+        headers = [('ID', 15), ('Room', 25), ('Status', 30), ('Category', 30), ('Issue Description', 90)]
+        for h_text, h_width in headers:
+            pdf.cell(h_width, 10, f' {h_text}', border=1, fill=True)
+        pdf.ln()
+        
+        # Table Data
+        pdf.set_font('helvetica', '', 8)
+        pdf.set_text_color(*TEXT_DARK)
+        
+        for _, row in df.iterrows():
+            # Check for page break
+            if pdf.get_y() > 260:
+                pdf.add_page()
+                # Re-add headers on new page
+                pdf.set_font('helvetica', 'B', 9)
+                pdf.set_fill_color(*BRAND_BLUE)
+                pdf.set_text_color(255, 255, 255)
+                for h_text, h_width in headers:
+                    pdf.cell(h_width, 10, f' {h_text}', border=1, fill=True)
+                pdf.ln()
+                pdf.set_font('helvetica', '', 8)
+                pdf.set_text_color(*TEXT_DARK)
+
+            # Determine status color
+            status = str(row['status']).lower()
+            if status == 'fixed':
+                pdf.set_text_color(*SUCCESS_GREEN)
+            elif status in ['open', 'cancelled']:
+                pdf.set_text_color(*DANGER_RED)
+            else:
+                pdf.set_text_color(*TEXT_DARK)
+            
+            # Draw row
+            h = 8
+            pdf.cell(15, h, f" {row['id']}", border=1)
+            pdf.set_text_color(*TEXT_DARK) # Reset color for rest of row
+            pdf.cell(25, h, f" {row.get('room_number', 'N/A')}", border=1)
+            
+            # Status badge (using text color)
+            if status == 'fixed': pdf.set_text_color(*SUCCESS_GREEN)
+            elif status in ['open', 'cancelled']: pdf.set_text_color(*DANGER_RED)
+            pdf.cell(30, h, f" {status.upper()}", border=1)
+            pdf.set_text_color(*TEXT_DARK)
+            
+            pdf.cell(30, h, f" {str(row['issue_type']).title()}", border=1)
+            
+            # Issue description (handles long text)
+            issue_text = str(row.get('description', row['issue_type']))
+            if len(issue_text) > 55:
+                issue_text = issue_text[:52] + "..."
+            pdf.cell(90, h, f" {issue_text}", border=1)
+            pdf.ln()
+            
+        # Ensure output is bytes for Flask/Werkzeug response
+        pdf_output = pdf.output()
+        response = make_response(bytes(pdf_output))
         response.headers["Content-Disposition"] = f"attachment; filename=fixlink_report_{datetime.now().strftime('%Y%m%d')}.pdf"
         response.headers["Content-type"] = "application/pdf"
         return response

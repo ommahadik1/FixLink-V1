@@ -63,44 +63,44 @@
                     <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-light me-2">
                         <i class="bi bi-speedometer2 me-1"></i>Dashboard
                     </a>
-                    <button class="btn btn-outline-light" onclick="window.print()">
+                    <a href="{{ url_for('admin.export_report', fmt='pdf', start_date=start_date, end_date=end_date) }}" class="btn btn-outline-light">
                         <i class="bi bi-printer me-1"></i>Export PDF
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<div class="container py-5">
+<div class="container py-4">
     <!-- Summary Stats -->
     <div class="row g-4 mb-5">
         <div class="col-md-3">
             <div class="analytics-card p-4 text-center">
                 <div class="stat-label mb-2">Total Volume</div>
                 <div class="stat-value">{{ total_tickets }}</div>
-                <div class="mt-2 small text-muted">All-time tickets reported</div>
+                <div class="mt-2 small text-muted">Tickets in selected window</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="analytics-card p-4 text-center">
                 <div class="stat-label mb-2">Resolved</div>
                 <div class="stat-value text-success">{{ fixed_count }}</div>
-                <div class="mt-2 small text-muted">Successfully fixed issues</div>
+                <div class="mt-2 small text-muted">Fixed in selected window</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="analytics-card p-4 text-center">
                 <div class="stat-label mb-2">Success Rate</div>
                 <div class="stat-value text-primary">{{ success_rate }}%</div>
-                <div class="mt-2 small text-muted">Ticket resolution efficiency</div>
+                <div class="mt-2 small text-muted">Window resolution efficiency</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="analytics-card p-4 text-center">
                 <div class="stat-label mb-2">Avg. Fix Time</div>
                 <div class="stat-value text-warning">{{ avg_res_time }}h</div>
-                <div class="mt-2 small text-muted">Mean time to resolution</div>
+                <div class="mt-2 small text-muted">Mean TTR for this window</div>
             </div>
         </div>
     </div>
@@ -111,8 +111,46 @@
         <div class="col-lg-8">
             <div class="analytics-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0 fw-bold">Ticket Volume Trend</h5>
-                    <span class="badge bg-primary-subtle text-primary py-2 px-3">Last 6 Months</span>
+                    <h5 class="mb-0 fw-bold">Ticket Volume Trend ({{ period|title }})</h5>
+                    <span class="badge bg-primary-subtle text-primary py-2 px-3">
+                        {% if start_date and end_date %}
+                            {{ start_date }} to {{ end_date }}
+                        {% else %}
+                            Live Trends
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Integrated Filter Bar -->
+                <div class="pb-3 mb-3 border-bottom">
+                    <form action="{{ url_for('admin.analytics') }}" method="GET" class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label smallest fw-bold text-uppercase mb-1">From</label>
+                            <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label smallest fw-bold text-uppercase mb-1">To</label>
+                            <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label smallest fw-bold text-uppercase mb-1">Period</label>
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <input type="radio" class="btn-check" name="period" id="pd_daily" value="daily" {% if period == 'daily' %}checked{% endif %} onchange="this.form.submit()">
+                                <label class="btn btn-outline-primary" for="pd_daily">Daily</label>
+                                
+                                <input type="radio" class="btn-check" name="period" id="pd_weekly" value="weekly" {% if period == 'weekly' %}checked{% endif %} onchange="this.form.submit()">
+                                <label class="btn btn-outline-primary" for="pd_weekly">Weekly</label>
+                                
+                                <input type="radio" class="btn-check" name="period" id="pd_monthly" value="monthly" {% if period == 'monthly' or not period %}checked{% endif %} onchange="this.form.submit()">
+                                <label class="btn btn-outline-primary" for="pd_monthly">Monthly</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
                 <div class="chart-container">
                     <canvas id="trendChart"></canvas>
