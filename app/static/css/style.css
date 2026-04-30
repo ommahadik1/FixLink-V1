@@ -9,7 +9,7 @@
 
 /* ============================================
    CSS VARIABLES
-   ============================================ */
+   ========================================= */
 :root {
     --mitwpu-blue: #0b4d8c;
     --mitwpu-blue-dark: #083968;
@@ -66,7 +66,8 @@
     --input-bg: #2d2d2d;
     --input-border: #444444;
     --input-text: #e0e0e0;
-    --mitwpu-blue: #3b82f6; /* Lighter blue for dark mode contrast */
+    --mitwpu-blue: #3b82f6;
+    /* Lighter blue for dark mode contrast */
     --mitwpu-blue-dark: #60a5fa;
     --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.4);
@@ -104,16 +105,41 @@
 
 /* Dark Mode Map Overrides */
 [data-theme="dark"] .room-poly {
-    fill: #2d3748; /* Slate gray base */
-    stroke: #4b5563; /* Darker stroke */
+    fill: #2d3748;
+    /* Slate gray base */
+    stroke: #4b5563;
+    /* Darker stroke */
 }
 
-[data-theme="dark"] .room-poly.fill-silver { fill: #374151; }
-[data-theme="dark"] .room-poly.fill-orange { fill: #fbbf24; } /* Warm Yellow/Orange */
-[data-theme="dark"] .room-poly.fill-red { fill: #f87171; } /* Soft Coral Red */
-[data-theme="dark"] .room-poly.fill-blue { fill: #60a5fa; } /* Bright Light Blue */
-[data-theme="dark"] .room-poly.fill-teal { fill: #34d399; } /* Bright Mint/Teal */
-[data-theme="dark"] .room-poly.fill-pink { fill: #f472b6; } /* Soft Pink */
+[data-theme="dark"] .room-poly.fill-silver {
+    fill: #374151;
+}
+
+[data-theme="dark"] .room-poly.fill-orange {
+    fill: #fbbf24;
+}
+
+/* Warm Yellow/Orange */
+[data-theme="dark"] .room-poly.fill-red {
+    fill: #f87171;
+}
+
+/* Soft Coral Red */
+[data-theme="dark"] .room-poly.fill-blue {
+    fill: #60a5fa;
+}
+
+/* Bright Light Blue */
+[data-theme="dark"] .room-poly.fill-teal {
+    fill: #34d399;
+}
+
+/* Bright Mint/Teal */
+[data-theme="dark"] .room-poly.fill-pink {
+    fill: #f472b6;
+}
+
+/* Soft Pink */
 
 [data-theme="dark"] .building-outline {
     fill: #1f2937;
@@ -135,20 +161,49 @@
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-main);
 }
-[data-theme="dark"] .room-block.classroom, [data-theme="dark"] .room-block.class, [data-theme="dark"] .room-block.large-classroom {
-    background: #60a5fa; color: #111827;
+
+[data-theme="dark"] .room-block.classroom,
+[data-theme="dark"] .room-block.class,
+[data-theme="dark"] .room-block.large-classroom {
+    background: #60a5fa;
+    color: #111827;
 }
-[data-theme="dark"] .room-block.lab, [data-theme="dark"] .room-block.lab-room {
-    background: #34d399; color: #111827;
+
+[data-theme="dark"] .room-block.lab,
+[data-theme="dark"] .room-block.lab-room {
+    background: #34d399;
+    color: #111827;
 }
+
 [data-theme="dark"] .room-block.washroom {
-    background: #f87171; color: #111827;
+    background: #f87171;
+    color: #111827;
 }
-[data-theme="dark"] .legend-color.class, [data-theme="dark"] .legend-box.class { background: #60a5fa; }
-[data-theme="dark"] .legend-color.lab, [data-theme="dark"] .legend-box.lab { background: #34d399; }
-[data-theme="dark"] .legend-color.washroom, [data-theme="dark"] .legend-box.washroom { background: #f87171; }
-[data-theme="dark"] .legend-color.faculty, [data-theme="dark"] .legend-box.faculty { background: #fbbf24; }
-[data-theme="dark"] .legend-color.lift, [data-theme="dark"] .legend-box.lift { background: #f472b6; }
+
+[data-theme="dark"] .legend-color.class,
+[data-theme="dark"] .legend-box.class {
+    background: #60a5fa;
+}
+
+[data-theme="dark"] .legend-color.lab,
+[data-theme="dark"] .legend-box.lab {
+    background: #34d399;
+}
+
+[data-theme="dark"] .legend-color.washroom,
+[data-theme="dark"] .legend-box.washroom {
+    background: #f87171;
+}
+
+[data-theme="dark"] .legend-color.faculty,
+[data-theme="dark"] .legend-box.faculty {
+    background: #fbbf24;
+}
+
+[data-theme="dark"] .legend-color.lift,
+[data-theme="dark"] .legend-box.lift {
+    background: #f472b6;
+}
 
 
 /* ============================================
@@ -235,7 +290,7 @@ body {
 .profile-dropdown {
     min-width: 290px;
     border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     border: 1px solid var(--border-color);
     padding: 0;
     overflow: hidden;
@@ -902,7 +957,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
     min-width: 200px;
 }
 
@@ -933,7 +988,7 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.18s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .floor-nav-arrow:hover {
@@ -962,7 +1017,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;
 }
 
@@ -1040,7 +1095,8 @@ body {
 
 /* Washrooms */
 .room-poly.fill-red {
-    fill: #c0392b; /* Fixed to match legend in light mode */
+    fill: #c0392b;
+    /* Fixed to match legend in light mode */
     color: white;
 }
 
@@ -1600,9 +1656,17 @@ body {
 }
 
 /* Ticket Status Border Classes for Dashboard */
-.border-status-overdue { border-left: 5px solid #dc3545 !important; }
-.border-status-in-progress { border-left: 5px solid #ffc107 !important; }
-.border-status-assigned { border-left: 5px solid #0b4d8c !important; }
+.border-status-overdue {
+    border-left: 5px solid #dc3545 !important;
+}
+
+.border-status-in-progress {
+    border-left: 5px solid #ffc107 !important;
+}
+
+.border-status-assigned {
+    border-left: 5px solid #0b4d8c !important;
+}
 
 /* Filters & Tickets Table */
 .filters-section {
@@ -1700,10 +1764,25 @@ body {
 }
 
 /* Professional Category Badges */
-.badge-it { background-color: #4e73df; color: white; }
-.badge-electrician { background-color: #f6c23e; color: #3a3b45; }
-.badge-plumber { background-color: #36b9cc; color: white; }
-.badge-carpenter { background-color: #e74a3b; color: white; }
+.badge-it {
+    background-color: #4e73df;
+    color: white;
+}
+
+.badge-electrician {
+    background-color: #f6c23e;
+    color: #3a3b45;
+}
+
+.badge-plumber {
+    background-color: #36b9cc;
+    color: white;
+}
+
+.badge-carpenter {
+    background-color: #e74a3b;
+    color: white;
+}
 
 .prof-id {
     font-family: 'Monaco', 'Consolas', monospace;
@@ -2123,7 +2202,7 @@ body {
 }
 
 /* Selected state override */
-.room-poly.selected, 
+.room-poly.selected,
 .room-group.selected rect {
     stroke: #0d6efd !important;
     stroke-width: 3px !important;
@@ -2222,7 +2301,7 @@ body {
 }
 
 [data-theme="dark"] .ticket-card {
-    background: rgba(30,30,30,0.45);
+    background: rgba(30, 30, 30, 0.45);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
@@ -2231,6 +2310,7 @@ body {
 .modal {
     z-index: 1060 !important;
 }
+
 .modal-backdrop {
     z-index: 1050 !important;
 }
@@ -2240,6 +2320,7 @@ body {
     border: 1px solid var(--border-color);
     color: var(--text-main);
 }
+
 .stat-content {
     flex: 1;
     min-width: 0;
