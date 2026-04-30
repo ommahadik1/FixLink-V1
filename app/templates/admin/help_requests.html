@@ -10,11 +10,11 @@
             <h2 class="fw-bold mb-1">Help Requests</h2>
             <p class="text-muted mb-0">Review and respond to assistance requests from field technicians</p>
         </div>
-        <div class="btn-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
-            <a href="{{ url_for('admin.help_requests', status='pending') }}" class="btn {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline-primary bg-white{% endif %} px-4">Pending</a>
-            <a href="{{ url_for('admin.help_requests', status='approved') }}" class="btn {% if status_filter == 'approved' %}btn-success{% else %}btn-outline-success bg-white{% endif %} px-4">Approved</a>
-            <a href="{{ url_for('admin.help_requests', status='rejected') }}" class="btn {% if status_filter == 'rejected' %}btn-danger{% else %}btn-outline-danger bg-white{% endif %} px-4">Rejected</a>
-            <a href="{{ url_for('admin.help_requests', status='all') }}" class="btn {% if status_filter == 'all' %}btn-secondary{% else %}btn-outline-secondary bg-white{% endif %} px-4">All</a>
+        <div class="filter-tabs shadow-sm">
+            <a href="{{ url_for('admin.help_requests', status='pending') }}" class="filter-tab {% if status_filter == 'pending' %}active-pending{% else %}inactive inactive-pending{% endif %}">Pending</a>
+            <a href="{{ url_for('admin.help_requests', status='approved') }}" class="filter-tab {% if status_filter == 'approved' %}active-approved{% else %}inactive inactive-approved{% endif %}">Approved</a>
+            <a href="{{ url_for('admin.help_requests', status='rejected') }}" class="filter-tab {% if status_filter == 'rejected' %}active-rejected{% else %}inactive inactive-rejected{% endif %}">Rejected</a>
+            <a href="{{ url_for('admin.help_requests', status='all') }}" class="filter-tab {% if status_filter == 'all' %}active-all{% else %}inactive inactive-all{% endif %}">All</a>
         </div>
     </div>
 

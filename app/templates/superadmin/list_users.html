@@ -23,78 +23,132 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4">User</th>
-                            <th>ID/PRN</th>
-                            <th>Current Role</th>
-                            <th>Password</th>
-                            <th>Joined</th>
-                            <th class="text-end pe-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                        <tr id="user-row-{{ user.id }}">
-                            <td class="ps-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="nav-avatar nav-avatar-sm me-3" style="width: 38px; height: 38px; font-size: 0.8rem;">
-                                        {% if user.profile_photo %}
-                                            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_photo) }}" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                                        {% else %}
-                                            <span>{{ user.name[:1] }}{{ user.name.split()[-1][0] if ' ' in user.name else '' }}</span>
-                                        {% endif %}
+            <!-- Desktop Table -->
+            <div class="desktop-table-container d-none d-md-block">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">User</th>
+                                <th>ID/PRN</th>
+                                <th>Current Role</th>
+                                <th>Password</th>
+                                <th>Joined</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr id="user-row-{{ user.id }}">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="nav-avatar nav-avatar-sm me-3" style="width: 38px; height: 38px; font-size: 0.8rem;">
+                                            {% if user.profile_photo %}
+                                                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_photo) }}" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                            {% else %}
+                                                <span>{{ user.name[:1] }}{{ user.name.split()[-1][0] if ' ' in user.name else '' }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ user.name }}</div>
+                                            <div class="text-muted small">{{ user.email }}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="fw-bold text-dark">{{ user.name }}</div>
-                                        <div class="text-muted small">{{ user.email }}</div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ user.prn or 'N/A' }}</span></td>
+                                <td>
+                                    <select class="form-select form-select-sm border-0 bg-light role-select" 
+                                            style="width: 130px; font-weight: 500;" 
+                                            data-id="{{ user.id }}">
+                                        {% for role in roles %}
+                                        <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>
+                                            {{ role.capitalize() }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <code class="me-2 text-primary" id="pwd-{{ user.id }}" style="display: none;">{{ user.plaintext_password or 'N/A' }}</code>
+                                        <code class="me-2 text-muted" id="stars-{{ user.id }}">********</code>
+                                        <button class="btn btn-sm p-0 border-0" onclick="toggleReveal({{ user.id }})">
+                                            <i class="bi bi-eye-fill text-muted" id="icon-{{ user.id }}"></i>
+                                        </button>
                                     </div>
-                                </div>
-                            </td>
-                            <td><span class="badge bg-light text-dark border">{{ user.prn or 'N/A' }}</span></td>
-                            <td>
-                                <select class="form-select form-select-sm border-0 bg-light role-select" 
-                                        style="width: 130px; font-weight: 500;" 
-                                        data-id="{{ user.id }}">
-                                    {% for role in roles %}
-                                    <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>
-                                        {{ role.capitalize() }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <code class="me-2 text-primary" id="pwd-{{ user.id }}" style="display: none;">{{ user.plaintext_password or 'N/A' }}</code>
-                                    <code class="me-2 text-muted" id="stars-{{ user.id }}">********</code>
-                                    <button class="btn btn-sm p-0 border-0" onclick="toggleReveal({{ user.id }})">
-                                        <i class="bi bi-eye-fill text-muted" id="icon-{{ user.id }}"></i>
-                                    </button>
-                                </div>
-                            </td>
-                            <td><small class="text-muted">{{ user.created_at.strftime('%d %b %Y') }}</small></td>
-                            <td class="text-end pe-4">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-primary btn-edit-user" 
-                                            data-id="{{ user.id }}"
-                                            data-name="{{ user.name|escape }}"
-                                            data-email="{{ user.email|escape }}"
-                                            data-prn="{{ user.prn|escape }}">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger btn-delete-user"
-                                            data-id="{{ user.id }}"
-                                            data-name="{{ user.name|escape }}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                </td>
+                                <td><small class="text-muted">{{ user.created_at.strftime('%d %b %Y') }}</small></td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary btn-edit-user" 
+                                                data-id="{{ user.id }}"
+                                                data-name="{{ user.name|escape }}"
+                                                data-email="{{ user.email|escape }}"
+                                                data-prn="{{ user.prn|escape }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete-user"
+                                                data-id="{{ user.id }}"
+                                                data-name="{{ user.name|escape }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="mobile-card-list d-md-none p-3">
+                {% for user in users %}
+                <div class="mc-card" id="user-mc-{{ user.id }}">
+                    <div class="mc-top">
+                        <div class="mc-id-title">
+                            <span class="mc-id"><span class="badge bg-light text-dark border">{{ user.prn or 'N/A' }}</span></span>
+                            <span class="mc-title">{{ user.name }}</span>
+                        </div>
+                        <div class="mc-status">
+                            <span class="badge bg-primary-subtle text-primary">{{ user.role.capitalize() if user.role else '—' }}</span>
+                        </div>
+                    </div>
+                    <div class="mc-desc">{{ user.email }}</div>
+                    <div class="mc-person-row">
+                        <div class="mc-person-left">
+                            <div class="mc-avatar">
+                                {% if user.profile_photo %}
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_photo) }}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                                {% else %}
+                                {{ user.name[:1] }}{{ user.name.split()[-1][0] if ' ' in user.name else '' }}
+                                {% endif %}
+                            </div>
+                            <div class="mc-person-info">
+                                <span class="mc-name">Joined {{ user.created_at.strftime('%d %b %Y') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mc-bottom">
+                        <div class="mc-date"></div>
+                        <div class="mc-actions">
+                            <button class="btn mc-btn mc-btn-update btn-edit-user"
+                                    data-id="{{ user.id }}"
+                                    data-name="{{ user.name|escape }}"
+                                    data-email="{{ user.email|escape }}"
+                                    data-prn="{{ user.prn|escape }}"
+                                    title="Edit User">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn mc-btn mc-btn-delete btn-delete-user"
+                                    data-id="{{ user.id }}"
+                                    data-name="{{ user.name|escape }}"
+                                    title="Delete User">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>

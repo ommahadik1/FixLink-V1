@@ -78,91 +78,162 @@
     <div class="container">
         <div class="card border-0 shadow-sm" style="border-radius: 14px; overflow: hidden;">
             {% if users %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="usersTable">
-                    <thead style="background:#f1f5f9;">
-                        <tr>
-                            <th class="px-4 py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">#</th>
-                            <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">User</th>
-                            <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">PRN</th>
-                            <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Role</th>
-                            <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Status</th>
-                            <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Tickets</th>
-                            <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Joined</th>
-                            <th class="py-3 text-end pe-4" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                        <tr id="user-row-{{ user.id }}">
-                            <td class="px-4 text-muted small">{{ loop.index + (page - 1) * per_page }}</td>
-                            <td>
-                                <!-- Avatar + name/email -->
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="user-table-avatar">
-                                        {% if user.profile_photo %}
-                                        <img src="{{ url_for('static', filename='uploads/' + user.profile_photo) }}" alt="{{ user.name }}" class="nav-avatar-img">
-                                        {% else %}
-                                        {{ (user.name.split()[0][0] + user.name.split()[-1][0]).upper() if user.name and ' ' in user.name else user.name[0].upper() if user.name else '?' }}
+            <div class="desktop-table-container d-none d-md-block">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="usersTable">
+                        <thead style="background:#f1f5f9;">
+                            <tr>
+                                <th class="px-4 py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">#</th>
+                                <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">User</th>
+                                <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">PRN</th>
+                                <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Role</th>
+                                <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Status</th>
+                                <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Tickets</th>
+                                <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Joined</th>
+                                <th class="py-3 text-end pe-4" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr id="user-row-{{ user.id }}">
+                                <td class="px-4 text-muted small">{{ loop.index + (page - 1) * per_page }}</td>
+                                <td>
+                                    <!-- Avatar + name/email -->
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="user-table-avatar">
+                                            {% if user.profile_photo %}
+                                            <img src="{{ url_for('static', filename='uploads/' + user.profile_photo) }}" alt="{{ user.name }}" class="nav-avatar-img">
+                                            {% else %}
+                                            {{ (user.name.split()[0][0] + user.name.split()[-1][0]).upper() if user.name and ' ' in user.name else user.name[0].upper() if user.name else '?' }}
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold" style="font-size:0.9rem;">{{ user.name }}</div>
+                                            <div class="text-muted small">{{ user.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-muted small font-monospace">{{ user.prn or '—' }}</td>
+                                <td>
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-primary-subtle text-primary">Admin</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary">Reporter</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.is_verified %}
+                                    <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Verified</span>
+                                    {% else %}
+                                    <span class="badge bg-warning-subtle text-warning"><i class="bi bi-clock me-1"></i>Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="fw-semibold">{{ user.tickets|length }}</span>
+                                    <span class="text-muted small">ticket{{ 's' if user.tickets|length != 1 }}</span>
+                                </td>
+                                <td class="text-muted small">{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary edit-user-btn"
+                                                data-id="{{ user.id }}"
+                                                data-name="{{ user.name | e }}"
+                                                data-email="{{ user.email | e }}"
+                                                data-prn="{{ (user.prn or '') | e }}"
+                                                data-role="{{ 'admin' if user.is_admin else 'reporter' }}"
+                                                title="Edit user">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% if not user.is_admin %}
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                onclick="deleteUser({{ user.id }}, '{{ user.name }}')"
+                                                title="Delete user">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if not user.is_verified %}
+                                        <button class="btn btn-sm btn-outline-success"
+                                                onclick="verifyUser({{ user.id }})"
+                                                title="Manually verify user">
+                                            <i class="bi bi-shield-check"></i>
+                                        </button>
                                         {% endif %}
                                     </div>
-                                    <div>
-                                        <div class="fw-semibold" style="font-size:0.9rem;">{{ user.name }}</div>
-                                        <div class="text-muted small">{{ user.email }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="text-muted small font-monospace">{{ user.prn or '—' }}</td>
-                            <td>
-                                {% if user.is_admin %}
-                                <span class="badge bg-primary-subtle text-primary">Admin</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Card Wrapper -->
+            <div class="mobile-card-list d-md-none p-3">
+                {% for user in users %}
+                <div class="mc-card" id="user-mc-{{ user.id }}">
+                    <div class="mc-top">
+                        <div class="mc-id-title">
+                            <span class="mc-id">#{{ loop.index + (page - 1) * per_page }}</span>
+                            <span class="mc-title">{{ user.name }}</span>
+                        </div>
+                        <div class="mc-status">
+                            {% if user.is_verified %}
+                            <span class="badge bg-success-subtle text-success">Verified</span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning">Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mc-desc">{{ user.email }}</div>
+                    <div class="mc-person-row">
+                        <div class="mc-person-left">
+                            <div class="mc-avatar">
+                                {% if user.profile_photo %}
+                                <img src="{{ url_for('static', filename='uploads/' + user.profile_photo) }}" alt="" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
                                 {% else %}
-                                <span class="badge bg-secondary-subtle text-secondary">Reporter</span>
+                                {{ (user.name.split()[0][0] + user.name.split()[-1][0]).upper() if user.name and ' ' in user.name else user.name[0].upper() if user.name else '?' }}
                                 {% endif %}
-                            </td>
-                            <td>
-                                {% if user.is_verified %}
-                                <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Verified</span>
-                                {% else %}
-                                <span class="badge bg-warning-subtle text-warning"><i class="bi bi-clock me-1"></i>Pending</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="fw-semibold">{{ user.tickets|length }}</span>
-                                <span class="text-muted small">ticket{{ 's' if user.tickets|length != 1 }}</span>
-                            </td>
-                            <td class="text-muted small">{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</td>
-                            <td class="text-end pe-4">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <button class="btn btn-sm btn-outline-primary edit-user-btn"
-                                            data-id="{{ user.id }}"
-                                            data-name="{{ user.name | e }}"
-                                            data-email="{{ user.email | e }}"
-                                            data-prn="{{ (user.prn or '') | e }}"
-                                            data-role="{{ 'admin' if user.is_admin else 'reporter' }}"
-                                            title="Edit user">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    {% if not user.is_admin %}
-                                    <button class="btn btn-sm btn-outline-danger"
-                                            onclick="deleteUser({{ user.id }}, '{{ user.name }}')"
-                                            title="Delete user">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    {% endif %}
-                                    {% if not user.is_verified %}
-                                    <button class="btn btn-sm btn-outline-success"
-                                            onclick="verifyUser({{ user.id }})"
-                                            title="Manually verify user">
-                                        <i class="bi bi-shield-check"></i>
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </div>
+                            <div class="mc-person-info">
+                                <span class="mc-name">{{ 'Admin' if user.is_admin else 'Reporter' }}</span>
+                                <span class="mc-meta">PRN: {{ user.prn or '—' }}</span>
+                            </div>
+                        </div>
+                        <span class="mc-pill">{{ user.tickets|length }} tickets</span>
+                    </div>
+                    <div class="mc-bottom">
+                        <div class="mc-date">
+                            <i class="bi bi-calendar"></i>
+                            {{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}
+                        </div>
+                        <div class="mc-actions">
+                            <button class="btn mc-btn mc-btn-update edit-user-btn"
+                                    data-id="{{ user.id }}"
+                                    data-name="{{ user.name | e }}"
+                                    data-email="{{ user.email | e }}"
+                                    data-prn="{{ (user.prn or '') | e }}"
+                                    data-role="{{ 'admin' if user.is_admin else 'reporter' }}"
+                                    title="Edit user">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            {% if not user.is_verified %}
+                            <button class="btn mc-btn mc-btn-resolve"
+                                    onclick="verifyUser({{ user.id }})"
+                                    title="Manually verify user">
+                                <i class="bi bi-shield-check"></i>
+                            </button>
+                            {% endif %}
+                            {% if not user.is_admin %}
+                            <button class="btn mc-btn mc-btn-delete"
+                                    onclick="deleteUser({{ user.id }}, '{{ user.name }}')"
+                                    title="Delete user">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
 
             <!-- Pagination -->

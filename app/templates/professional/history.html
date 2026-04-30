@@ -104,62 +104,113 @@
             </div>
         </div>
         
-        <div class="table-responsive px-4 pb-4">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Room</th>
-                        <th>Issue Category</th>
-                        <th>Completed Date</th>
-                        <th class="text-center">Complexity</th>
-                        <th class="text-end">Proof</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ticket in completed_tickets %}
-                    <tr>
-                        <td><span class="ticket-id">#{{ ticket.id }}</span></td>
-                        <td>
-                            <div class="fw-bold">Room {{ ticket.room.number }}</div>
-                            <div class="small text-muted">{{ ticket.room.floor.name if ticket.room.floor else '' }}</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">{{ ticket.issue_type.replace('_', ' ').title() }}</div>
-                            <div class="small text-muted">{{ ticket.description|truncate(40) }}</div>
-                        </td>
-                        <td>
-                            <div class="fw-bold">{{ ticket.job_completed_at.strftime('%b %d, %Y') if ticket.job_completed_at else 'N/A' }}</div>
-                            <div class="small text-muted">{{ ticket.job_completed_at.strftime('%H:%M') if ticket.job_completed_at else '' }}</div>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge rounded-pill px-3 py-2 
-                                {% if ticket.complexity == 'high' %}bg-danger-subtle text-danger border border-danger
-                                {% elif ticket.complexity == 'medium' %}bg-warning-subtle text-warning border border-warning
-                                {% else %}bg-success-subtle text-success border border-success{% endif %}">
-                                {{ (ticket.complexity or 'low')|title }}
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            {% if ticket.completion_photo_filename %}
-                            <a href="{{ url_for('static', filename='uploads/' + ticket.completion_photo_filename) }}" target="_blank">
-                                <img src="{{ url_for('static', filename='uploads/' + ticket.completion_photo_filename) }}" class="photo-preview" alt="Proof">
-                            </a>
-                            {% else %}
-                            <span class="text-muted small">No photo</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            <i class="bi bi-archive display-4 opacity-25 d-block mb-3"></i>
-                            <p>No completed tasks found in your history.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Desktop Table -->
+        <div class="desktop-table-container d-none d-md-block">
+            <div class="table-responsive px-4 pb-4">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Room</th>
+                            <th>Issue Category</th>
+                            <th>Completed Date</th>
+                            <th class="text-center">Complexity</th>
+                            <th class="text-end">Proof</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in completed_tickets %}
+                        <tr>
+                            <td><span class="ticket-id">#{{ ticket.id }}</span></td>
+                            <td>
+                                <div class="fw-bold">Room {{ ticket.room.number }}</div>
+                                <div class="small text-muted">{{ ticket.room.floor.name if ticket.room.floor else '' }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ ticket.issue_type.replace('_', ' ').title() }}</div>
+                                <div class="small text-muted">{{ ticket.description|truncate(40) }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ ticket.job_completed_at.strftime('%b %d, %Y') if ticket.job_completed_at else 'N/A' }}</div>
+                                <div class="small text-muted">{{ ticket.job_completed_at.strftime('%H:%M') if ticket.job_completed_at else '' }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill px-3 py-2 
+                                    {% if ticket.complexity == 'high' %}bg-danger-subtle text-danger border border-danger
+                                    {% elif ticket.complexity == 'medium' %}bg-warning-subtle text-warning border border-warning
+                                    {% else %}bg-success-subtle text-success border border-success{% endif %}">
+                                    {{ (ticket.complexity or 'low')|title }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                {% if ticket.completion_photo_filename %}
+                                <a href="{{ url_for('static', filename='uploads/' + ticket.completion_photo_filename) }}" target="_blank">
+                                    <img src="{{ url_for('static', filename='uploads/' + ticket.completion_photo_filename) }}" class="photo-preview" alt="Proof">
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">No photo</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-archive display-4 opacity-25 d-block mb-3"></i>
+                                <p>No completed tasks found in your history.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mobile Cards -->
+        <div class="mobile-card-list d-md-none p-3">
+            {% for ticket in completed_tickets %}
+            <div class="mc-card">
+                <div class="mc-top">
+                    <div class="mc-id-title">
+                        <span class="mc-id">#{{ ticket.id }}</span>
+                        <span class="mc-title">{{ ticket.issue_type.replace('_', ' ').title() }}</span>
+                    </div>
+                    <div class="mc-status">
+                        <span class="badge rounded-pill px-2 py-1
+                            {% if ticket.complexity == 'high' %}bg-danger-subtle text-danger border border-danger
+                            {% elif ticket.complexity == 'medium' %}bg-warning-subtle text-warning border border-warning
+                            {% else %}bg-success-subtle text-success border border-success{% endif %}">
+                            {{ (ticket.complexity or 'low')|title }}
+                        </span>
+                    </div>
+                </div>
+                <div class="mc-desc">{{ ticket.description|truncate(60) }}</div>
+                <div class="mc-person-row">
+                    <div class="mc-person-left">
+                        <div class="mc-avatar bg-success"><i class="bi bi-check2"></i></div>
+                        <div class="mc-person-info">
+                            <span class="mc-name">Room {{ ticket.room.number }}</span>
+                            <span class="mc-meta">{{ ticket.room.floor.name if ticket.room.floor else 'Academic Block' }}</span>
+                        </div>
+                    </div>
+                    {% if ticket.completion_photo_filename %}
+                    <a href="{{ url_for('static', filename='uploads/' + ticket.completion_photo_filename) }}" target="_blank">
+                        <img src="{{ url_for('static', filename='uploads/' + ticket.completion_photo_filename) }}" style="width:28px;height:28px;object-fit:cover;border-radius:6px;" alt="Proof">
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="mc-bottom">
+                    <div class="mc-date">
+                        <i class="bi bi-calendar"></i>
+                        {{ ticket.job_completed_at.strftime('%b %d, %Y %H:%M') if ticket.job_completed_at else 'N/A' }}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-archive display-4 opacity-25 d-block mb-3"></i>
+                <p>No completed tasks found.</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>

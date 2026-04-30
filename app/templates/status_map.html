@@ -189,12 +189,12 @@
         left: auto !important;
         transform: none !important;
         width: 380px;
-        background: white;
+        background: var(--bg-surface, var(--bg-card));
         border-radius: 16px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        box-shadow: var(--shadow-lg);
         z-index: 1050;
         overflow: hidden;
-        border: 1px solid rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
         display: none;
     }
 
@@ -242,11 +242,11 @@
     
     .panel-header {
         padding: 15px 20px;
-        background: #f8f9fa;
+        background: var(--bg-main);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-color);
     }
     
     .x-small { font-size: 0.7rem; }

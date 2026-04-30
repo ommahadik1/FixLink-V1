@@ -91,36 +91,67 @@
                     <h5 class="mb-0 font-weight-bold">Professional Performance Metrics (Efficiency)</h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Professional</th>
-                                    <th>Category</th>
-                                    <th>Tasks Fixed</th>
-                                    <th>Avg TTR (Hours)</th>
-                                    <th>Active Load</th>
-                                    <th>Efficiency</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for pro in tech_stats %}
-                                <tr>
-                                    <td>{{ pro.name }}</td>
-                                    <td><span class="badge bg-secondary">{{ pro.category|title }}</span></td>
-                                    <td>{{ pro.fixed_count }}</td>
-                                    <td>{{ pro.avg_ttr_hours }} h</td>
-                                    <td>{{ pro.active_tasks }}</td>
-                                    <td>
-                                        {% set efficiency = 100 - (pro.avg_ttr_hours * 2) %}
-                                        <div class="progress" style="height: 6px;">
-                                            <div class="progress-bar bg-success" style="width: {{ [0, [100, efficiency]|min]|max }}%"></div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="desktop-table-container d-none d-md-block">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Professional</th>
+                                        <th>Category</th>
+                                        <th>Tasks Fixed</th>
+                                        <th>Avg TTR (Hours)</th>
+                                        <th>Active Load</th>
+                                        <th>Efficiency</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pro in tech_stats %}
+                                    <tr>
+                                        <td>{{ pro.name }}</td>
+                                        <td><span class="badge bg-secondary">{{ pro.category|title }}</span></td>
+                                        <td>{{ pro.fixed_count }}</td>
+                                        <td>{{ pro.avg_ttr_hours }} h</td>
+                                        <td>{{ pro.active_tasks }}</td>
+                                        <td>
+                                            {% set efficiency = 100 - (pro.avg_ttr_hours * 2) %}
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar bg-success" style="width: {{ [0, [100, efficiency]|min]|max }}%"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mobile-card-list d-md-none p-3">
+                        {% for pro in tech_stats %}
+                        <div class="mc-card">
+                            <div class="mc-top">
+                                <div class="mc-id-title">
+                                    <span class="mc-id text-primary"><i class="bi bi-person-badge me-1"></i>{{ pro.category|title }}</span>
+                                    <span class="mc-title">{{ pro.name }}</span>
+                                </div>
+                                <div class="mc-status">
+                                    <span class="badge bg-primary">{{ pro.fixed_count }} Fixed</span>
+                                </div>
+                            </div>
+                            <div class="mc-person-row">
+                                <div class="mc-person-left">
+                                    <div class="mc-avatar">{{ pro.name[0]|upper }}</div>
+                                    <div class="mc-person-info">
+                                        <span class="mc-name">Active Load: {{ pro.active_tasks }}</span>
+                                        <span class="mc-meta">Avg TTR: {{ pro.avg_ttr_hours }}h</span>
+                                    </div>
+                                </div>
+                                <span class="mc-pill border border-success text-success">
+                                    {% set efficiency = 100 - (pro.avg_ttr_hours * 2) %}
+                                    Eff: {{ [0, [100, efficiency]|min]|max }}%
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>

@@ -91,93 +91,147 @@
     
     <!-- Professionals List -->
     <div class="tickets-card border-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light border-0">
-                    <tr>
-                        <th class="ps-4 text-uppercase small fw-bold text-muted">ID</th>
-                        <th class="text-uppercase small fw-bold text-muted">Professional</th>
-                        <th class="text-uppercase small fw-bold text-muted">Contact Info</th>
-                        <th class="text-uppercase small fw-bold text-muted text-center">Category</th>
-                        <th class="text-uppercase small fw-bold text-muted text-center">Status</th>
-                        <th class="text-uppercase small fw-bold text-muted text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for prof in professionals %}
-                    <tr id="professional-row-{{ prof.id }}" 
-                        data-category="{{ prof.category }}" 
-                        class="border-bottom">
-                        <td class="ps-4">
-                            <span class="prof-id">#{{ prof.id }}</span>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <span class="prof-avatar">{{ prof.name[0]|upper }}</span>
-                                <div>
-                                    <div class="prof-name">{{ prof.name }}</div>
-                                    <div class="small text-muted">Joined: {{ prof.created_at.strftime('%b %d, %Y') if prof.created_at else '-' }}</div>
+        <div class="desktop-table-container d-none d-md-block">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light border-0">
+                        <tr>
+                            <th class="ps-4 text-uppercase small fw-bold text-muted">ID</th>
+                            <th class="text-uppercase small fw-bold text-muted">Professional</th>
+                            <th class="text-uppercase small fw-bold text-muted">Contact Info</th>
+                            <th class="text-uppercase small fw-bold text-muted text-center">Category</th>
+                            <th class="text-uppercase small fw-bold text-muted text-center">Status</th>
+                            <th class="text-uppercase small fw-bold text-muted text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prof in professionals %}
+                        <tr id="professional-row-{{ prof.id }}" 
+                            data-category="{{ prof.category }}" 
+                            class="border-bottom">
+                            <td class="ps-4">
+                                <span class="prof-id">#{{ prof.id }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="prof-avatar">{{ prof.name[0]|upper }}</span>
+                                    <div>
+                                        <div class="prof-name">{{ prof.name }}</div>
+                                        <div class="small text-muted">Joined: {{ prof.created_at.strftime('%b %d, %Y') if prof.created_at else '-' }}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="small fw-semibold"><i class="bi bi-envelope me-1"></i>{{ prof.email }}</div>
-                            <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ prof.phone or '-' }}</div>
-                        </td>
-                        <td class="text-center">
-                            <span class="status-badge badge-{{ prof.category.lower().replace('_', '-') if '_' in prof.category else prof.category.lower() }} shadow-sm">
-                                {% if prof.category == 'it_technician' %}<i class="bi bi-pc-display me-1"></i>
-                                {% elif prof.category == 'electrician' %}<i class="bi bi-lightning-fill me-1"></i>
-                                {% elif prof.category == 'plumber' %}<i class="bi bi-water me-1"></i>
-                                {% elif prof.category == 'carpenter' %}<i class="bi bi-hammer me-1"></i>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold"><i class="bi bi-envelope me-1"></i>{{ prof.email }}</div>
+                                <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ prof.phone or '-' }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="status-badge badge-{{ prof.category.lower().replace('_', '-') if '_' in prof.category else prof.category.lower() }} shadow-sm">
+                                    {% if prof.category == 'it_technician' %}<i class="bi bi-pc-display me-1"></i>
+                                    {% elif prof.category == 'electrician' %}<i class="bi bi-lightning-fill me-1"></i>
+                                    {% elif prof.category == 'plumber' %}<i class="bi bi-water me-1"></i>
+                                    {% elif prof.category == 'carpenter' %}<i class="bi bi-hammer me-1"></i>
+                                    {% endif %}
+                                    {{ category_names.get(prof.category, prof.category) }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if prof.is_active %}
+                                <span class="status-badge status-fixed shadow-sm" style="min-width: 80px;">
+                                    <i class="bi bi-check-circle-fill me-1"></i> ACTIVE
+                                </span>
+                                {% else %}
+                                <span class="status-badge status-cancelled shadow-sm" style="min-width: 80px;">
+                                    <i class="bi bi-x-circle-fill me-1"></i> INACTIVE
+                                </span>
                                 {% endif %}
-                                {{ category_names.get(prof.category, prof.category) }}
-                            </span>
-                        </td>
-                        <td class="text-center">
-                            {% if prof.is_active %}
-                            <span class="status-badge status-fixed shadow-sm" style="min-width: 80px;">
-                                <i class="bi bi-check-circle-fill me-1"></i> ACTIVE
-                            </span>
-                            {% else %}
-                            <span class="status-badge status-cancelled shadow-sm" style="min-width: 80px;">
-                                <i class="bi bi-x-circle-fill me-1"></i> INACTIVE
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center pe-4">
-                            <div class="d-flex justify-content-center gap-2">
-                                <a href="{{ url_for('admin.professional_history', prof_id=prof.id) }}" 
-                                   class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center"
-                                   style="width: 32px; height: 32px; border-radius: 8px;"
-                                   title="View History">
-                                    <i class="bi bi-clock-history"></i>
-                                </a>
-                                <button class="btn btn-sm btn-outline-info d-inline-flex align-items-center justify-content-center" 
-                                        style="width: 32px; height: 32px; border-radius: 8px;"
-                                        onclick="editProfessional({{ prof.id }})"
-                                        title="Edit Profile">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" 
-                                        style="width: 32px; height: 32px; border-radius: 8px;"
-                                        onclick="deleteProfessional({{ prof.id }})"
-                                        title="Delete Professional">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <i class="bi bi-people display-4 text-muted opacity-50"></i>
-                            <p class="mt-3 text-muted">No professionals found matching your filters</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{{ url_for('admin.professional_history', prof_id=prof.id) }}" 
+                                       class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center"
+                                       style="width: 32px; height: 32px; border-radius: 8px;"
+                                       title="View History">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-info d-inline-flex align-items-center justify-content-center" 
+                                            style="width: 32px; height: 32px; border-radius: 8px;"
+                                            onclick="editProfessional({{ prof.id }})"
+                                            title="Edit Profile">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center" 
+                                            style="width: 32px; height: 32px; border-radius: 8px;"
+                                            onclick="deleteProfessional({{ prof.id }})"
+                                            title="Delete Professional">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <i class="bi bi-people display-4 text-muted opacity-50"></i>
+                                <p class="mt-3 text-muted">No professionals found matching your filters</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mobile Card Wrapper -->
+        <div class="mobile-card-list d-md-none p-3">
+            {% for prof in professionals %}
+            <div class="mc-card" id="professional-mc-{{ prof.id }}" data-category="{{ prof.category }}">
+                <div class="mc-top">
+                    <div class="mc-id-title">
+                        <span class="mc-id">#{{ prof.id }}</span>
+                        <span class="mc-title">{{ prof.name }}</span>
+                    </div>
+                    <div class="mc-status">
+                        {% if prof.is_active %}
+                        <span class="badge bg-success-subtle text-success">ACTIVE</span>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger">INACTIVE</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mc-desc"><i class="bi bi-envelope me-1"></i>{{ prof.email }} | <i class="bi bi-telephone me-1"></i>{{ prof.phone or '-' }}</div>
+                <div class="mc-person-row">
+                    <div class="mc-person-left">
+                        <div class="mc-avatar">{{ prof.name[0]|upper }}</div>
+                        <div class="mc-person-info">
+                            <span class="mc-name">{{ prof.name }}</span>
+                            <span class="mc-meta">Joined: {{ prof.created_at.strftime('%b %d, %Y') if prof.created_at else '-' }}</span>
+                        </div>
+                    </div>
+                    <span class="mc-pill">
+                        {% if prof.category == 'it_technician' %}<i class="bi bi-pc-display me-1"></i>
+                        {% elif prof.category == 'electrician' %}<i class="bi bi-lightning-fill me-1"></i>
+                        {% elif prof.category == 'plumber' %}<i class="bi bi-water me-1"></i>
+                        {% elif prof.category == 'carpenter' %}<i class="bi bi-hammer me-1"></i>
+                        {% endif %}
+                        {{ category_names.get(prof.category, prof.category) }}
+                    </span>
+                </div>
+                <div class="mc-bottom">
+                    <div class="mc-date"></div>
+                    <div class="mc-actions">
+                        <a href="{{ url_for('admin.professional_history', prof_id=prof.id) }}" class="btn mc-btn mc-btn-view" title="View History"><i class="bi bi-clock-history"></i></a>
+                        <button class="btn mc-btn mc-btn-update" onclick="editProfessional({{ prof.id }})" title="Edit Profile"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn mc-btn mc-btn-delete" onclick="deleteProfessional({{ prof.id }})" title="Delete Professional"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people display-4 text-muted opacity-50"></i>
+                <p class="mt-3 text-muted">No professionals found matching your filters</p>
+            </div>
+            {% endfor %}
         </div>
         
         <!-- Pagination & Footer -->

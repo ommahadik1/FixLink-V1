@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 MIT-WPU Vyas Smart-Room Maintenance Tracker
 Database Initialization Script
@@ -32,34 +32,34 @@ def create_vyas_data():
         # Check if data already exists
         existing = Building.query.filter_by(name='Vyas').first()
         if existing:
-            print(f"\n⚠️  Vyas building already exists.")
+            print(f"\n️  Vyas building already exists.")
             response = input("Do you want to reset and recreate all data? (y/N): ")
             if response.lower() != 'y':
                 print("Operation cancelled.")
                 return
             
             # Clear existing data
-            print("\n🗑️  Clearing existing data...")
+            print("\n️  Clearing existing data...")
             Asset.query.delete()
             Room.query.delete()
             Floor.query.delete()
             Building.query.delete()
             db.session.commit()
-            print("✅ Existing data cleared.")
+            print(" Existing data cleared.")
         
         # Create Vyas Building
-        print("\n🏢 Creating Vyas Building...")
+        print("\n Creating Vyas Building...")
         vyas = Building(
             name='Vyas',
             description='Academic building with classrooms and laboratories'
         )
         db.session.add(vyas)
         db.session.commit()
-        print(f"  ✅ Created: {vyas.name}")
+        print(f"   Created: {vyas.name}")
         
 
         # Create 8 Floors (Ground to 7th)
-        print("\n🏢 Creating Floors...")
+        print("\n Creating Floors...")
         floors = []
         floor_names = [
             'Ground Floor',
@@ -80,18 +80,18 @@ def create_vyas_data():
             )
             db.session.add(floor)
             floors.append(floor)
-            print(f"  ✅ Created: {name}")
+            print(f"   Created: {name}")
         
         db.session.commit()
         
         # Create rooms for each floor
-        print("\n🚪 Creating Rooms...")
+        print("\n Creating Rooms...")
         
         # Define floors that should have the detailed layout
         detailed_floors = [1, 2, 3, 4, 5, 7]
         
         for floor in floors:
-            print(f"\n  📍 Creating rooms for {floor.name}...")
+            print(f"\n   Creating rooms for {floor.name}...")
             
             if floor.level in detailed_floors:
                 # DETAILED LAYOUT (Same as 4th Floor)
@@ -156,7 +156,7 @@ def create_vyas_data():
                         room_type=tmpl['type']
                     )
                     db.session.add(room)
-                    print(f"    ✅ Created: {room_number} - {room_name}")
+                    print(f"     Created: {room_number} - {room_name}")
 
             elif floor.level == 0:
                 # GROUND FLOOR (Detailed Layout)
@@ -210,7 +210,7 @@ def create_vyas_data():
                         room_type=config['type']
                     )
                     db.session.add(room)
-                    print(f"    ✅ Created: {room_number} - {config['name']}")
+                    print(f"     Created: {room_number} - {config['name']}")
 
             else:
                 # GENERIC LAYOUT (6th)
@@ -231,12 +231,12 @@ def create_vyas_data():
                         room_type=config['type']
                     )
                     db.session.add(room)
-                    print(f"    ✅ Created: {floor_prefix}{config['suffix']}")
+                    print(f"     Created: {floor_prefix}{config['suffix']}")
             
         db.session.commit()
         
         # Create assets for rooms
-        print("\n📦 Creating Assets...")
+        print("\n Creating Assets...")
         all_rooms = Room.query.all()
         
         for room in all_rooms:
@@ -273,7 +273,7 @@ def create_vyas_data():
                 )
                 db.session.add(asset)
             
-            print(f"  ✅ Created {len(assets)} assets for {room.number}")
+            print(f"   Created {len(assets)} assets for {room.number}")
         
         db.session.commit()
         
@@ -284,13 +284,13 @@ def create_vyas_data():
         print("\n" + "=" * 60)
         print("DATABASE INITIALIZATION COMPLETE")
         print("=" * 60)
-        print(f"\n📊 Summary:")
+        print(f"\n Summary:")
         print(f"   Building: Vyas")
         print(f"   Floors: {len(floors)}")
         print(f"   Rooms: {room_count}")
         print(f"   Assets: {asset_count}")
         
-        print("\n✨ Vyas building data created successfully!")
+        print("\n Vyas building data created successfully!")
         print("   You can now start the server with: python run.py")
         print("=" * 60)
 

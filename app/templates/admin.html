@@ -4,6 +4,12 @@
 
 {% block content %}
 <!-- Admin Header -->
+<style>
+    [data-theme="dark"] .stat-number,
+    [data-theme="dark"] .stat-label {
+        color: whitesmoke !important;
+    }
+</style>
 <section class="admin-header vyas-admin-header">
     <div class="container">
         <div class="row align-items-center">
@@ -24,7 +30,7 @@
 <section class="stats-section">
     <div class="container">
         <div class="row g-4 justify-content-center">
-            <div class="col-md-6 col-lg fade-in" style="animation-delay: 0s;">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl fade-in" style="animation-delay: 0s;">
                 <div class="stat-card total">
                     <div class="stat-icon">
                         <i class="bi bi-clipboard-data"></i>
@@ -35,7 +41,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg fade-in" style="animation-delay: 0.1s;">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl fade-in" style="animation-delay: 0.1s;">
                 <div class="stat-card open">
                     <div class="stat-icon">
                         <i class="bi bi-exclamation-circle"></i>
@@ -46,7 +52,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg fade-in" style="animation-delay: 0.15s;">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl fade-in" style="animation-delay: 0.15s;">
                 <div class="stat-card assigned">
                     <div class="stat-icon">
                         <i class="bi bi-person-check"></i>
@@ -57,7 +63,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg fade-in" style="animation-delay: 0.2s;">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl fade-in" style="animation-delay: 0.2s;">
                 <div class="stat-card progress">
                     <div class="stat-icon">
                         <i class="bi bi-arrow-repeat"></i>
@@ -68,7 +74,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg fade-in" style="animation-delay: 0.3s;">
+            <div class="col-12 col-sm-6 col-lg-4 col-xl fade-in" style="animation-delay: 0.3s;">
                 <div class="stat-card fixed">
                     <div class="stat-icon">
                         <i class="bi bi-check-circle"></i>
