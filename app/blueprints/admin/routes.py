@@ -164,6 +164,19 @@ def history():
                           pagination=pagination,
                           search_query=search_query)
 
+@admin_bp.route('/booking-history')
+@admin_required
+def booking_history():
+    """Admin view for faculty classroom bookings."""
+    from ...models import RoomBooking
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    query = RoomBooking.query.order_by(RoomBooking.slot_start.desc())
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('admin_booking_history.html', 
+                          bookings=pagination.items, 
+                          pagination=pagination)
+
 
 @admin_bp.route('/users')
 @admin_required

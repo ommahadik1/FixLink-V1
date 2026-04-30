@@ -304,6 +304,7 @@ class Room(db.Model):
         status, has_open, has_broken = self.compute_status_from_loaded()
         return {
             'id': self.id,
+            'floor_id': self.floor_id,
             'number': self.number,
             'name': self.name,
             'room_type': self.room_type,
@@ -742,6 +743,7 @@ class Timetable(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     faculty_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    collaborator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
     day_of_week = db.Column(db.Integer, nullable=False) # 0=Mon, ..., 6=Sun
     start_time = db.Column(db.Time, nullable=False) # e.g., 10:00
@@ -749,13 +751,16 @@ class Timetable(db.Model):
     subject = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    faculty = db.relationship('User', backref=db.backref('timetables', lazy=True))
+    faculty = db.relationship('User', foreign_keys=[faculty_id], backref=db.backref('timetables', lazy=True))
+    collaborator = db.relationship('User', foreign_keys=[collaborator_id], backref=db.backref('collab_timetables', lazy=True))
     
     def to_dict(self):
         return {
             'id': self.id,
             'faculty_id': self.faculty_id,
             'faculty_name': self.faculty.name if self.faculty else 'Unknown',
+            'collaborator_id': self.collaborator_id,
+            'collaborator_name': self.collaborator.name if self.collaborator else None,
             'room_id': self.room_id,
             'room_number': self.room.number if self.room else None,
             'day_of_week': self.day_of_week,
@@ -778,6 +783,8 @@ class RoomBooking(db.Model):
     slot_start = db.Column(db.DateTime, nullable=False) # Using DateTime to store timestamp
     status = db.Column(db.String(20), default=STATUS_ACTIVE)
     subject = db.Column(db.String(100), nullable=True)
+    division = db.Column(db.String(50), nullable=True)
+    course = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     faculty = db.relationship('User', backref=db.backref('room_bookings', lazy=True))
@@ -792,5 +799,7 @@ class RoomBooking(db.Model):
             'date': self.date.isoformat(),
             'slot_start': self.slot_start.isoformat() + 'Z',
             'status': self.status,
-            'subject': self.subject
+            'subject': self.subject,
+            'division': self.division,
+            'course': self.course
         }

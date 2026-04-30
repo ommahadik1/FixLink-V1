@@ -3,6 +3,7 @@ Faculty Routes Blueprint - Smart Room Scheduling
 """
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, session
+from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 from ... import db
 from ...models import User, Building, Floor, Room, Schedule, AdHocBooking, Timetable, RoomBooking
@@ -23,8 +24,12 @@ def dashboard():
     current_dt = datetime.utcnow() + timedelta(hours=5, minutes=30)
     current_day = current_dt.weekday() # 0 = Monday
     
-    # 1. My Schedule
-    my_schedules = Schedule.query.filter_by(faculty_id=faculty.id).order_by(Schedule.day_of_week, Schedule.start_time).all()
+    # 1. My Schedule (Include where I am primary OR collaborator)
+    my_schedules = Timetable.query.filter(
+        or_(Timetable.faculty_id == faculty.id, Timetable.collaborator_id == faculty.id)
+    ).order_by(Timetable.day_of_week, Timetable.start_time).all()
+    
+    all_faculties = User.query.filter_by(role=User.ROLE_FACULTY).order_by(User.name).all()
     my_adhoc = AdHocBooking.query.filter(
         AdHocBooking.faculty_id == faculty.id,
         AdHocBooking.end_datetime >= datetime.utcnow()
@@ -49,13 +54,30 @@ def dashboard():
             rooms_by_floor[room.floor_id] = []
         rooms_by_floor[room.floor_id].append(room)
 
+    # 3. Booking History
+    booking_history = RoomBooking.query.filter_by(faculty_id=faculty.id).order_by(RoomBooking.slot_start.desc()).all()
+
+    # Bookings this week for the timetable grid
+    start_of_week = (current_dt - timedelta(days=current_day)).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    
+    bookings_this_week = RoomBooking.query.filter(
+        RoomBooking.faculty_id == faculty.id,
+        RoomBooking.status == RoomBooking.STATUS_ACTIVE,
+        RoomBooking.slot_start >= start_of_week,
+        RoomBooking.slot_start <= end_of_week
+    ).all()
+
     return render_template('faculty/dashboard.html',
                            faculty=faculty,
                            floors=floors,
                            all_rooms=all_rooms,
+                           all_faculties=all_faculties,
                            rooms_by_floor=rooms_by_floor,
                            my_schedules=my_schedules,
                            my_adhoc=my_adhoc,
+                           booking_history=booking_history,
+                           bookings_this_week=bookings_this_week,
                            current_day=current_day)
 
 
@@ -155,6 +177,8 @@ def create_booking():
     room_id = data.get('room_id')
     slot_iso = data.get('slot_start') # Expecting ISO format 'YYYY-MM-DDTHH:MM:SS'
     subject = data.get('subject', 'Faculty Meeting')
+    division = data.get('division', '')
+    course = data.get('course', '')
     
     if not room_id or not slot_iso:
         return api_response(success=False, error="Room ID and slot start time are required.", status=400)
@@ -205,7 +229,9 @@ def create_booking():
                 faculty_id=user_id,
                 date=booking_date,
                 slot_start=slot_start + timedelta(hours=i),
-                subject=subject
+                subject=subject,
+                division=division,
+                course=course
             )
             db.session.add(booking)
         
@@ -218,6 +244,76 @@ def create_booking():
         return api_response(success=True, message=f"Successfully reserved for {duration_hours} hour(s).")
     except ValueError:
         return api_response(success=False, error="Invalid date/time format.", status=400)
+
+@faculty_bp.route('/api/map/status_for_time', methods=['POST'])
+@faculty_login_required
+@handle_api_errors
+def get_map_status_for_time():
+    """Returns map occupancy based on a specific time frame."""
+    data = request.get_json()
+    floor_ids = data.get('floor_ids', [])
+    room_type = data.get('room_type', 'all')
+    start_iso = data.get('start_time')
+    end_iso = data.get('end_time')
+    
+    if not floor_ids or not start_iso or not end_iso:
+        return api_response(success=False, error="Floor IDs, start time, and end time are required.", status=400)
+        
+    try:
+        start_dt = datetime.fromisoformat(start_iso.replace('Z', ''))
+        end_dt = datetime.fromisoformat(end_iso.replace('Z', ''))
+        booking_date = start_dt.date()
+        current_day = start_dt.weekday()
+        start_time = start_dt.time()
+        end_time = end_dt.time()
+        
+        rooms_query = Room.query.filter(Room.floor_id.in_(floor_ids))
+        if room_type != 'all':
+            rooms_query = rooms_query.filter(Room.room_type == room_type)
+            
+        rooms = rooms_query.all()
+        result_rooms = []
+        
+        for room in rooms:
+            # Check RoomBooking
+            overlapping_booking = RoomBooking.query.filter(
+                RoomBooking.room_id == room.id,
+                RoomBooking.date == booking_date,
+                RoomBooking.status == RoomBooking.STATUS_ACTIVE,
+                RoomBooking.slot_start >= start_dt,
+                RoomBooking.slot_start < end_dt
+            ).first()
+            
+            # Check Timetable
+            overlapping_timetable = Timetable.query.filter(
+                Timetable.room_id == room.id,
+                Timetable.day_of_week == current_day,
+                Timetable.start_time < end_time,
+                Timetable.end_time > start_time
+            ).first()
+            
+            is_occupied = (overlapping_booking is not None) or (overlapping_timetable is not None)
+            
+            status_data = 'occupied' if is_occupied else 'vacant'
+            
+            room_dict = room.to_map_dict()
+            room_dict['occupancy'] = {'status': status_data}
+            
+            if is_occupied:
+                subject = overlapping_booking.subject if overlapping_booking else overlapping_timetable.subject
+                faculty_name = overlapping_booking.faculty.name if overlapping_booking and overlapping_booking.faculty else (overlapping_timetable.faculty.name if overlapping_timetable and overlapping_timetable.faculty else 'Unknown')
+                room_dict['occupancy']['subject'] = subject
+                room_dict['occupancy']['faculty'] = faculty_name
+                room_dict['occupancy']['type'] = 'booking' if overlapping_booking else 'scheduled'
+                room_dict['occupancy']['is_owner'] = False # For advanced search, owner status less important for viewing
+            
+            result_rooms.append(room_dict)
+            
+        return api_response(data={
+            'rooms': result_rooms
+        })
+    except Exception as e:
+        return api_response(success=False, error=str(e), status=400)
 
 
 @faculty_bp.route('/api/bookings/cancel/<int:booking_id>', methods=['POST'])
@@ -290,39 +386,48 @@ def upsert_timetable():
     # For simplicity, we'll clear existing timetable for this faculty or handle updates
     # The request says "Bulk upserts", I'll implement a basic upsert
     success_count = 0
-    
     for entry in data:
         room_id = entry.get('room_id')
         day = entry.get('day_of_week')
         start_time_str = entry.get('start_time') # 'HH:MM'
         subject = entry.get('subject')
+        duration = int(entry.get('duration', 1))
+        collaborator_id = entry.get('collaborator_id')
+        if collaborator_id == '': collaborator_id = None
         
         if not all([room_id, day is not None, start_time_str, subject]):
             continue
             
         try:
-            start_time = datetime.strptime(start_time_str, '%H:%M').time()
-        except:
+            start_dt = datetime.strptime(start_time_str, '%H:%M')
+            start_time = start_dt.time()
+            end_time = (start_dt + timedelta(hours=duration)).time()
+        except Exception as e:
+            print(f"Error parsing time: {e}")
             continue
             
-        # Check for conflict in the room at that time
+        # Check for existing entry for this faculty at this time/day to avoid duplicates
         existing = Timetable.query.filter_by(
-            room_id=room_id,
+            faculty_id=user_id,
             day_of_week=day,
             start_time=start_time
         ).first()
         
         if existing:
             # Update
-            existing.faculty_id = user_id
+            existing.room_id = room_id
             existing.subject = subject
+            existing.end_time = end_time
+            existing.collaborator_id = collaborator_id
         else:
             # Create
             new_entry = Timetable(
                 room_id=room_id,
                 faculty_id=user_id,
+                collaborator_id=collaborator_id,
                 day_of_week=day,
                 start_time=start_time,
+                end_time=end_time,
                 subject=subject
             )
             db.session.add(new_entry)
@@ -330,4 +435,21 @@ def upsert_timetable():
         success_count += 1
         
     db.session.commit()
-    return api_response(message=f"Successfully updated {success_count} timetable entries.")
+    return api_response(message=f"Successfully synchronized {success_count} entries to your timetable.")
+
+
+@faculty_bp.route('/api/faculty/timetable/<int:entry_id>', methods=['DELETE'])
+@faculty_login_required
+@handle_api_errors
+def delete_timetable_entry(entry_id):
+    """Deletes a specific timetable entry."""
+    entry = Timetable.query.get_or_404(entry_id)
+    user_id = session.get('user_id')
+    
+    if entry.faculty_id != user_id:
+        return api_response(success=False, error="You can only delete classes where you are the primary faculty.", status=403)
+        
+    db.session.delete(entry)
+    db.session.commit()
+    
+    return api_response(success=True, message="Class removed from your timetable.")

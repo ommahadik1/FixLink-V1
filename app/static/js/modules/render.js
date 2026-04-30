@@ -62,14 +62,13 @@ export function renderGroundFloor(container, rooms, isAdmin = false, isReport = 
         }
 
         const isInteractable = room && (isAdmin || isReport || !['washroom', 'lift', 'stairs', 'mgmt'].includes(type));
-        const attrs = isInteractable ?
-            `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom(event, '${roomNum}', '${roomId}', '${roomName}', '${type}')"` :
-            'class="room-disabled"';
+        const groupClass = isInteractable ? "room-group" : "room-group room-disabled";
+        const clickAttr = isInteractable ? `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom(event, '${roomNum}', '${roomId}', '${roomName}', '${type}')"` : '';
 
         let circleHtml = isAdmin ? renderAdminIndicators(x, y, w, isIssue, isInProgress, isAssigned) : '';
 
         return `
-            <g class="room-group" ${attrs}>
+            <g class="${groupClass}" ${clickAttr}>
                 <rect x="${x}" y="${y}" width="${w}" height="${h}" class="${className}" rx="4" />
                 <text x="${x + w / 2}" y="${y + h / 2}" class="room-text" text-anchor="middle" dominant-baseline="middle" fill="white">${labelText || roomNum}</text>
                 ${circleHtml}
@@ -125,14 +124,13 @@ export function renderDetailedLayout(container, rooms, floorLevel, isAdmin = fal
         }
 
         const isInteractable = room && (isAdmin || isReport || !['washroom', 'lift', 'stairs', 'mgmt'].includes(type));
-        const attrs = isInteractable ?
-            `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom(event, '${roomNum}', '${roomId}', '${roomName}', '${type}')"` :
-            'class="room-disabled"';
+        const groupClass = isInteractable ? "room-group" : "room-group room-disabled";
+        const clickAttr = isInteractable ? `data-room="${roomNum}" data-room-id="${roomId}" onclick="selectRoom(event, '${roomNum}', '${roomId}', '${roomName}', '${type}')"` : '';
 
         let circleHtml = isAdmin ? renderAdminIndicators(x, y, w, isIssue, isInProgress, isAssigned) : '';
 
         return `
-            <g class="room-group" ${attrs}>
+            <g class="${groupClass}" ${clickAttr}>
                 <rect x="${x}" y="${y}" width="${w}" height="${h}" class="${className}" rx="4" />
                 <text x="${x + w / 2}" y="${y + h / 2}" class="room-text" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11">${labelText || roomNum}</text>
                 ${circleHtml}

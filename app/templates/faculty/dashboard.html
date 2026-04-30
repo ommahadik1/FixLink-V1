@@ -161,6 +161,15 @@
     .room-btn:hover { background: var(--bg-light); transform: translateY(-2px); }
     .room-btn.selected { background: var(--mitwpu-blue) !important; color: white !important; border-color: #00d2ff; }
 
+    /* Black out non-interactable rooms (e.g. washrooms and lifts) on the faculty map */
+    .room-disabled .room-poly {
+        fill: #000000 !important;
+        stroke: #333333 !important;
+    }
+    .room-disabled .room-text {
+        fill: #555555 !important;
+    }
+
     .selector-group { margin-bottom: 20px; }
     .selector-label { font-size: 0.85rem; font-weight: 700; color: var(--mitwpu-blue); margin-bottom: 10px; display: block; text-transform: uppercase; letter-spacing: 1px; }
     
@@ -705,13 +714,88 @@
         padding: 0 !important;
     }
 
-    .btn-gradient-primary {
-        background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%) !important;
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.5px !important;
-        box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3) !important;
+    /* Timetable Grid Styles */
+    .timetable-grid {
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1000px;
     }
+    
+    .timetable-grid th, .timetable-grid td {
+        padding: 0 !important;
+        height: 80px;
+        vertical-align: middle;
+        border: 1px solid #f1f5f9 !important;
+        text-align: center;
+    }
+
+    .time-col { width: 120px; background: #f8fafc !important; font-weight: 700; color: #64748b; font-size: 0.75rem; text-transform: uppercase; }
+    .day-label { background: #f8fafc !important; font-weight: 700; color: #334155; font-size: 0.85rem; }
+    .slot-header { background: #f1f5f9 !important; font-size: 0.75rem; color: #64748b; font-weight: 600; }
+
+    .timetable-cell.occupied {
+        padding: 8px !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .timetable-cell.occupied:hover {
+        transform: scale(1.02);
+        z-index: 10;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .cell-content {
+        position: relative;
+        height: 100%;
+        background: rgba(var(--mitwpu-blue-rgb), 0.1);
+        border: 1.5px solid var(--mitwpu-blue);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 6px;
+    }
+
+    .btn-delete-class {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: none;
+        background: rgba(255, 255, 255, 0.4);
+        color: #ef4444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.2s ease;
+        z-index: 5;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .timetable-cell.occupied:hover .btn-delete-class {
+        opacity: 1;
+    }
+
+    .btn-delete-class:hover {
+        background: #ef4444;
+        color: white;
+        transform: scale(1.1);
+    }
+    
+    .occupied:nth-child(even) .cell-content { background: rgba(14, 165, 233, 0.1); border-color: #0ea5e9; }
+    .occupied:nth-child(3n) .cell-content { background: rgba(3, 105, 161, 0.1); border-color: #0369a1; }
+
+    .cell-subject { font-weight: 700; font-size: 0.8rem; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-meta { font-size: 0.65rem; color: #64748b; font-weight: 600; margin-top: 2px; }
+
+    .timetable-cell.vacant { background: #ffffff; }
 </style>
 {% endblock %}
 
@@ -758,6 +842,9 @@
                     <button class="btn rounded-3 px-3 py-2 {% if view == 'tracker' %}active btn-light shadow-sm{% else %}text-white{% endif %} d-flex align-items-center" id="btn-tracker">
                         <i class="bi bi-map me-2 fs-5"></i>Map Tracker
                     </button>
+                    <button class="btn rounded-3 px-3 py-2 text-white d-flex align-items-center" id="btn-history">
+                        <i class="bi bi-clock-history me-2 fs-5"></i>Booking History
+                    </button>
                 </div>
             </div>
         </div>
@@ -774,9 +861,14 @@
                         <h3 class="fw-bold mb-0">Upcoming Agenda</h3>
                         <p class="text-muted mb-0">Your synchronized teaching schedule across the Vyas building.</p>
                     </div>
-                    <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#timetableModal">
-                        <i class="bi bi-arrow-repeat me-2"></i>Sync My Timetable
-                    </button>
+                    <div>
+                        <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#timetableModal">
+                            <i class="bi bi-arrow-repeat me-2"></i>Sync My Timetable
+                        </button>
+                        <button class="btn btn-info rounded-pill px-4 shadow-sm text-white ms-2" data-bs-toggle="modal" data-bs-target="#advancedBookingModal">
+                            <i class="bi bi-calendar-plus me-2"></i>Book a Class
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Ad-Hoc Section -->
@@ -803,33 +895,100 @@
                     {% endfor %}
                 {% endif %}
 
-                <!-- Regular Schedule Section -->
-                <h5 class="fw-bold text-uppercase small letter-spacing-1 text-muted mb-3 mt-4">Weekly Engagement</h5>
+                <!-- Premium Grid Timetable Section -->
+                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                    <h5 class="fw-bold text-uppercase small letter-spacing-1 text-muted mb-0">Weekly Engagement Grid</h5>
+                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i>Click any class to locate classroom on map</div>
+                </div>
+
                 {% if my_schedules %}
-                    {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
-                    {% for sched in my_schedules %}
-                    <div class="slot-card shadow-sm animate-on-load {% if sched.day_of_week == current_day %}today{% endif %}">
-                        <div class="slot-time-box">
-                            <div class="time-start">{{ sched.start_time.strftime('%I:%M') }}</div>
-                            <div class="time-end">{{ sched.end_time.strftime('%I:%M %p') }}</div>
-                        </div>
-                        <div class="slot-details">
-                            {% if sched.day_of_week == current_day %}
-                                <span class="badge bg-primary rounded-pill mb-2">Happening Today</span>
-                            {% else %}
-                                <span class="badge bg-light text-dark border rounded-pill mb-2">{{ days[sched.day_of_week] }}</span>
-                            {% endif %}
-                            <div class="slot-subject">{{ sched.subject }}</div>
-                            <div class="slot-meta">
-                                <div class="meta-item"><i class="bi bi-door-open"></i> VYAS-{{ sched.room.number }}</div>
-                                <div class="meta-item"><i class="bi bi-building"></i> Level {{ sched.room.floor.level }}</div>
-                            </div>
-                        </div>
-                        <div class="slot-action">
-                            <span class="room-tag">REGULAR</span>
-                        </div>
-                    </div>
-                    {% endfor %}
+                <div class="table-responsive glass-card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <table class="table table-bordered timetable-grid mb-0">
+                        <thead>
+                            <tr>
+                                <th class="time-col">Day / Time</th>
+                                {% for h in range(9, 19) %}
+                                <th class="slot-header">{{ h > 12 and h-12 or h }}:00 {{ h >= 12 and 'PM' or 'AM' }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                            {% for day_idx in range(6) %}
+                            <tr>
+                                <td class="day-label">{{ days[day_idx] }}</td>
+                                {% set day_schedules = [] %}
+                                {% for s in my_schedules %}
+                                    {% if s.day_of_week == day_idx and s.start_time and s.end_time %}
+                                        {# Convert start_time to integer hour #}
+                                        {% set start_h = s.start_time.hour %}
+                                        {% set end_h = s.end_time.hour %}
+                                        {% set duration = end_h - start_h %}
+                                        {# Add to temp list for this day #}
+                                        {% set _ = day_schedules.append({'start': start_h, 'end': end_h, 'duration': duration, 'subject': s.subject, 'room': s.room, 'is_booking': false, 'id': s.id, 'collaborator': s.collaborator}) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% for b in bookings_this_week %}
+                                    {% if b.slot_start.weekday() == day_idx %}
+                                        {% set start_h = b.slot_start.hour %}
+                                        {% set end_h = start_h + 1 %}
+                                        {% set _ = day_schedules.append({'start': start_h, 'end': end_h, 'duration': 1, 'subject': b.subject, 'room': b.room, 'is_booking': true, 'id': b.id, 'collaborator': none}) %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                {# Render slots for the day #}
+                                {% set current_h = 9 %}
+                                {% for slot_idx in range(10) %} {# 9 AM to 7 PM = 10 slots #}
+                                    {% set h = 9 + slot_idx %}
+                                    {% if h >= current_h %}
+                                        {% set found = [] %}
+                                        {% for ds in day_schedules %}
+                                            {% if ds.start == h %}
+                                                {% set _ = found.append(ds) %}
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if found %}
+                                            {% set match = found[0] %}
+                                            <td colspan="{{ match.duration }}" class="timetable-cell occupied" 
+                                                onclick="locateRoom('{{ match.room.number }}', {{ match.room.id }}, {{ match.room.floor.level }})">
+                                                <div class="cell-content">
+                                                    {% if not match.is_booking %}
+                                                        {% if faculty.id %} {# We use JS to delete, ensure faculty matches #}
+                                                        <button class="btn-delete-class" onclick="deleteClass(event, {{ match.id }})">
+                                                            <i class="bi bi-trash3-fill"></i>
+                                                        </button>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-1 p-1" style="font-size: 0.5rem;">Ad-Hoc</span>
+                                                        <button class="btn-delete-class" onclick="deleteBooking(event, {{ match.id }})">
+                                                            <i class="bi bi-trash3-fill"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                    <div class="cell-subject">{{ match.subject }}</div>
+                                                    <div class="cell-meta">
+                                                        <i class="bi bi-person-fill me-1"></i>
+                                                        {% if match.collaborator %}
+                                                            <span>{{ faculty.name.split(' ')[0] }} & {{ match.collaborator.name.split(' ')[0] }}</span>
+                                                        {% else %}
+                                                            <span>VYAS {{ match.room.number }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {% set current_h = h + match.duration %}
+                                        {% else %}
+                                            <td class="timetable-cell vacant"></td>
+                                            {% set current_h = h + 1 %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% else %}
                     <div class="text-center py-5 glass-card border-dashed">
                         <i class="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
@@ -871,6 +1030,53 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Section: Booking History -->
+    <div id="view-history" class="view-section" style="display: none; opacity: 0;">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                        <h3 class="fw-bold mb-0">Booking History</h3>
+                        <p class="text-muted mb-0">Your past and upcoming class reservations.</p>
+                    </div>
+                </div>
+                
+                <div class="table-responsive glass-card border-0 shadow-sm rounded-4 overflow-hidden p-3 text-white">
+                    <table class="table table-dark table-hover mb-0 bg-transparent">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Room</th>
+                                <th>Subject</th>
+                                <th>Division / Course</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in booking_history %}
+                            <tr>
+                                <td>{{ b.date.strftime('%d %b %Y') }} at {{ b.slot_start.strftime('%I:%M %p') }}</td>
+                                <td>{{ b.room.number }}</td>
+                                <td>{{ b.subject }}</td>
+                                <td>{{ b.division or '-' }} / {{ b.course or '-' }}</td>
+                                <td>
+                                    {% if b.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center py-4 text-muted">No booking history found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -928,11 +1134,28 @@
                     <!-- Left Column: Form -->
                     <div class="col-lg-7 p-4">
                         <div class="tt-form-container h-100">
-                            <div class="selector-group">
-                                <label class="selector-label">1. Course Details</label>
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control bg-transparent border-secondary text-main" id="ttSubject" placeholder="Subject">
-                                    <label class="text-muted small">Academic Subject Name</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="selector-group">
+                                        <label class="selector-label">1. Course Details</label>
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control bg-transparent border-secondary text-main" id="ttSubject" placeholder="Subject">
+                                            <label class="text-muted small">Academic Subject Name</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="selector-group">
+                                        <label class="selector-label">Collaborator (Optional)</label>
+                                        <select class="form-select bg-transparent border-secondary text-main py-3" id="ttCollaborator">
+                                            <option value="">No Collaborator</option>
+                                            {% for f in all_faculties %}
+                                                {% if f.id != faculty.id %}
+                                                <option value="{{ f.id }}">{{ f.name }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1031,26 +1254,26 @@
     </div>
 </div>
 
-<!-- Booking Modal (Glassmorphism) -->
-<div class="modal fade glass-modal" id="bookingModal" tabindex="-1" aria-hidden="true">
+<!-- Booking Modal (Glassmorphism removed for clean light theme) -->
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Module Slot Booking</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-clock-history me-2"></i>Module Slot Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <form id="bookingForm">
                     <input type="hidden" id="bookRoomId">
                     <div class="mb-3">
-                        <label class="form-label">Select Start Time (Today)</label>
+                        <label class="form-label text-muted small fw-bold text-uppercase">Select Start Time (Today)</label>
                         <select class="form-select" id="bookSlotStart">
                             <!-- Dynamic Slots -->
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Duration</label>
+                        <label class="form-label text-muted small fw-bold text-uppercase">Duration</label>
                         <select class="form-select" id="bookDuration">
                             <option value="1">1 Hour</option>
                             <option value="2">2 Hours (Max)</option>
@@ -1058,17 +1281,91 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Lecture / Meeting Subject</label>
+                        <label class="form-label text-muted small fw-bold text-uppercase">Lecture / Meeting Subject</label>
                         <input type="text" class="form-control" id="bookSubject" placeholder="Enter subject..." required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Division (Optional)</label>
+                            <input type="text" class="form-control" id="bookDivision" placeholder="e.g. A, B, C">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Course (Optional)</label>
+                            <input type="text" class="form-control" id="bookCourse" placeholder="e.g. BTech CS">
+                        </div>
                     </div>
 
                     <div class="alert alert-info py-2 small bg-opacity-10 border-info">
                         <i class="bi bi-info-circle me-2"></i>Slots are reserved in 1-hour or 2-hour increments.
                     </div>
 
-                    <button type="submit" class="btn btn-info w-100 py-2 fw-bold text-white shadow-sm" id="btnConfirmBooking">
-                        DEPLOY ASSIGNMENT
-                    </button>
+                    <div class="mt-4 pt-2">
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold text-white shadow-sm" id="btnConfirmBooking" style="background: var(--mitwpu-blue); border: none;">
+                            DEPLOY ASSIGNMENT
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Booking Search Modal -->
+<div class="modal fade" id="advancedBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-search me-2"></i>Find Available Room</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="advancedBookingForm">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Date</label>
+                        <input type="date" class="form-control" id="advDate" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Start Time</label>
+                            <select class="form-select" id="advStartTime" required>
+                                {% for h in range(7, 19) %}
+                                <option value="{{ h }}:00">{{ h > 12 and h-12 or h }}:00 {{ h >= 12 and 'PM' or 'AM' }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Duration</label>
+                            <select class="form-select" id="advDuration" required>
+                                <option value="1">1 Hour</option>
+                                <option value="2">2 Hours</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Preferred Floors</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for floor in floors %}
+                            <div class="form-check">
+                                <input class="form-check-input adv-floor-checkbox" type="checkbox" value="{{ floor.id }}" id="advFloor{{ floor.id }}" checked>
+                                <label class="form-check-label text-dark fw-medium" for="advFloor{{ floor.id }}">{{ floor.name }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Room Type</label>
+                        <select class="form-select" id="advRoomType">
+                            <option value="all">Any Type</option>
+                            <option value="class">Classroom</option>
+                            <option value="lab">Lab</option>
+                        </select>
+                    </div>
+                    <div class="mt-4 pt-2">
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold text-white shadow-sm" id="btnSearchRooms" style="background: var(--mitwpu-blue); border: none;">
+                            <i class="bi bi-search me-2"></i>FIND ROOMS
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -1121,14 +1418,18 @@
             
             gsap.set(viewTracker, { display: 'none', opacity: 0 });
             
-            function switchView(fromView, toView, btnActive, btnInactive) {
+            function switchView(fromView, toView, btnActive) {
                 if (!fromView || !toView || toView.classList.contains('active')) return;
                 
                 // Update buttons
-                btnActive.classList.add('active', 'btn-light');
-                btnActive.classList.remove('text-white');
-                btnInactive.classList.remove('active', 'btn-light');
-                btnInactive.classList.add('text-white');
+                document.querySelectorAll('.nav-pills-premium .btn').forEach(btn => {
+                    btn.classList.remove('active', 'btn-light');
+                    btn.classList.add('text-white');
+                });
+                if(btnActive) {
+                    btnActive.classList.add('active', 'btn-light');
+                    btnActive.classList.remove('text-white');
+                }
                 
                 const onTransitionComplete = () => {
                     fromView.style.display = 'none';
@@ -1154,17 +1455,25 @@
             }
 
             btnSchedule.addEventListener('click', () => {
-                switchView(viewTracker, viewSchedule, btnSchedule, btnTracker);
+                switchView(document.querySelector('.view-section.active'), viewSchedule, btnSchedule);
             });
             
             btnTracker.addEventListener('click', () => {
-                switchView(viewSchedule, viewTracker, btnTracker, btnSchedule);
+                switchView(document.querySelector('.view-section.active'), viewTracker, btnTracker);
                 // Initialize Map only on first click or forcefully refresh
                 if (!window.mapInitialized) {
                     refreshMapStatus(4);
                     window.mapInitialized = true;
                 }
             });
+            
+            const btnHistory = document.getElementById('btn-history');
+            const viewHistory = document.getElementById('view-history');
+            if(btnHistory) {
+                btnHistory.addEventListener('click', () => {
+                    switchView(document.querySelector('.view-section.active'), viewHistory, btnHistory);
+                });
+            }
 
             // Export to window for SVG clicks
             window.selectRoom = (event, roomNumber, roomId) => {
@@ -1184,13 +1493,38 @@
                 refreshMapStatus(level);
             });
 
+            let advancedSearchMode = false;
+            let advancedTimePayload = null;
+
             async function refreshMapStatus(floorLevel) {
                 const container = document.getElementById('facultyMapContainer');
                 const selectedOption = floorSelect.options[floorSelect.selectedIndex];
                 const floorId = selectedOption.getAttribute('data-floor-id');
                 
                 try {
-                    const res = await fetch(`/faculty/api/map/status/${floorId}`); 
+                    let url = `/faculty/api/map/status/${floorId}`;
+                    let options = {};
+                    
+                    if (advancedSearchMode && advancedTimePayload) {
+                        url = '/faculty/api/map/status_for_time';
+                        const startDt = new Date(advancedTimePayload.startIso);
+                        const endDt = new Date(startDt.getTime() + advancedTimePayload.duration * 3600000);
+                        options = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                floor_ids: [parseInt(floorId)],
+                                room_type: 'all',
+                                start_time: startDt.toISOString(),
+                                end_time: endDt.toISOString()
+                            })
+                        };
+                    }
+
+                    const res = await fetch(url, options); 
                     const result = await res.json();
                     
                     if (result.success) {
@@ -1201,7 +1535,6 @@
                         container.innerHTML = '';
                         renderFloorMap(container, rooms, floorLevel.toString(), false);
                         
-                        // Apply custom "Facility Intelligence" colors
                         applyOccupancyStyling();
                     }
                 } catch (err) {
@@ -1344,14 +1677,27 @@
                 const select = document.getElementById('bookSlotStart');
                 if (select) {
                     select.innerHTML = '';
-                    const now = new Date();
-                    const currentHour = now.getHours();
-                    for (let h = currentHour; h <= 19; h++) {
-                        const timeStr = `${h.toString().padStart(2, '0')}:00`;
+                    if (advancedSearchMode && advancedTimePayload) {
                         const option = document.createElement('option');
-                        option.value = timeStr;
-                        option.innerText = `${h > 12 ? h-12 : h}:00 ${h >= 12 ? 'PM' : 'AM'}`;
+                        const h = parseInt(advancedTimePayload.timeStr.split(':')[0]);
+                        option.value = advancedTimePayload.timeStr;
+                        option.innerText = `${h > 12 ? h-12 : h}:00 ${h >= 12 ? 'PM' : 'AM'} (Selected)`;
                         select.appendChild(option);
+                        select.disabled = true;
+                        document.getElementById('bookDuration').value = advancedTimePayload.duration;
+                        document.getElementById('bookDuration').disabled = true;
+                    } else {
+                        select.disabled = false;
+                        document.getElementById('bookDuration').disabled = false;
+                        const now = new Date();
+                        const currentHour = now.getHours();
+                        for (let h = currentHour; h <= 19; h++) {
+                            const timeStr = `${h.toString().padStart(2, '0')}:00`;
+                            const option = document.createElement('option');
+                            option.value = timeStr;
+                            option.innerText = `${h > 12 ? h-12 : h}:00 ${h >= 12 ? 'PM' : 'AM'}`;
+                            select.appendChild(option);
+                        }
                     }
                 }
                 
@@ -1371,20 +1717,30 @@
                 const btn = document.getElementById('btnConfirmBooking');
                 btn.disabled = true;
 
-                const slotTime = document.getElementById('bookSlotStart').value; // e.g. "14:00"
-                const now = new Date();
-                const [h, m] = slotTime.split(':');
-                now.setHours(h, 0, 0, 0);
+                const slotTime = document.getElementById('bookSlotStart').value; 
+                let slotStart;
                 
-                // Construct ISO string (YYYY-MM-DDTHH:MM:SS) for backend
-                const slotStart = now.getFullYear() + '-' + 
-                              String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-                              String(now.getDate()).padStart(2, '0') + 'T' + 
+                if (advancedSearchMode && advancedTimePayload) {
+                    const startDt = new Date(advancedTimePayload.startIso);
+                    slotStart = startDt.getFullYear() + '-' + 
+                              String(startDt.getMonth() + 1).padStart(2, '0') + '-' + 
+                              String(startDt.getDate()).padStart(2, '0') + 'T' + 
                               slotTime + ':00';
+                } else {
+                    const now = new Date();
+                    const [h, m] = slotTime.split(':');
+                    now.setHours(h, 0, 0, 0);
+                    slotStart = now.getFullYear() + '-' + 
+                                  String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                                  String(now.getDate()).padStart(2, '0') + 'T' + 
+                                  slotTime + ':00';
+                }
 
                 const payload = {
                     room_id: document.getElementById('bookRoomId').value,
                     subject: document.getElementById('bookSubject').value,
+                    division: document.getElementById('bookDivision').value,
+                    course: document.getElementById('bookCourse').value,
                     duration: document.getElementById('bookDuration').value,
                     slot_start: slotStart
                 };
@@ -1400,9 +1756,9 @@
                     });
                     const result = await res.json();
                     if (result.success) {
-                        bookingModal.hide();
+                        try { bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide(); } catch(e){}
                         Swal.fire({ icon: 'success', title: 'Slot Assigned', text: 'Facility AI has reserved your room.', timer: 2000, showConfirmButton: false });
-                        refreshMapStatus(4);
+                        setTimeout(() => location.reload(), 2000);
                     } else {
                         Swal.fire({ icon: 'error', title: 'Access Denied', text: result.error });
                     }
@@ -1412,6 +1768,91 @@
                     btn.disabled = false;
                 }
             });
+
+            // Advanced Booking Form Submit
+            const advForm = document.getElementById('advancedBookingForm');
+            if(advForm) {
+                advForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const date = document.getElementById('advDate').value;
+                    const time = document.getElementById('advStartTime').value;
+                    const duration = parseInt(document.getElementById('advDuration').value);
+                    
+                    const [h, m] = time.split(':');
+                    const startDt = new Date(date);
+                    startDt.setHours(h, 0, 0, 0);
+                    const endDt = new Date(startDt.getTime() + duration * 3600000);
+                    
+                    const startIso = startDt.toISOString();
+                    const endIso = endDt.toISOString();
+                    
+                    const floorCheckboxes = document.querySelectorAll('.adv-floor-checkbox:checked');
+                    const floorIds = Array.from(floorCheckboxes).map(cb => parseInt(cb.value));
+                    const roomType = document.getElementById('advRoomType').value;
+                    
+                    if (floorIds.length === 0) {
+                        Swal.fire('No Floors Selected', 'Please select at least one floor.', 'warning');
+                        return;
+                    }
+                    
+                    advancedSearchMode = true;
+                    advancedTimePayload = {
+                        date: date,
+                        startIso: startIso,
+                        duration: duration,
+                        timeStr: time
+                    };
+                    
+                    try { bootstrap.Modal.getInstance(document.getElementById('advancedBookingModal')).hide(); } catch(err){}
+                    
+                    btnTracker.click();
+                    
+                    const container = document.getElementById('facultyMapContainer');
+                    container.innerHTML = '<div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3"></div><p>Searching for available rooms...</p></div>';
+                    
+                    try {
+                        const res = await fetch('/faculty/api/map/status_for_time', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                floor_ids: floorIds,
+                                room_type: roomType,
+                                start_time: startIso,
+                                end_time: endIso
+                            })
+                        });
+                        const result = await res.json();
+                        
+                        if (result.success) {
+                            const rooms = result.data.rooms;
+                            currentStatusData = {};
+                            rooms.forEach(r => currentStatusData[r.id] = r);
+                            
+                            const firstFloorId = floorIds[0];
+                            const floorOption = Array.from(document.getElementById('floorSelectorMap').options).find(opt => opt.getAttribute('data-floor-id') == firstFloorId);
+                            if (floorOption) {
+                                document.getElementById('floorSelectorMap').value = floorOption.value;
+                                container.innerHTML = '';
+                                renderFloorMap(container, rooms.filter(r => r.floor_id == firstFloorId), floorOption.value, false);
+                                applyOccupancyStyling();
+                                
+                                Swal.fire({
+                                    toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+                                    icon: 'success', title: 'Showing availability for selected time'
+                                });
+                            }
+                        } else {
+                            Swal.fire('Search Failed', result.error, 'error');
+                        }
+                    } catch(err) {
+                        console.error(err);
+                    }
+                });
+            }
 
             // Pusher Real-time integration
             const pusherAppKey = "{{ config['PUSHER_KEY'] }}";
@@ -1491,6 +1932,8 @@
 
             document.getElementById('btnAddTTEntry').addEventListener('click', () => {
                 const subject = document.getElementById('ttSubject').value.trim();
+                const collaboratorId = document.getElementById('ttCollaborator').value;
+                const collaboratorName = document.getElementById('ttCollaborator').options[document.getElementById('ttCollaborator').selectedIndex].text;
 
                 if (!selectedRoom || !subject) {
                     Swal.fire({ icon: 'warning', title: 'Data Missing', text: 'Please select a classroom and enter a subject.' });
@@ -1505,7 +1948,9 @@
                     day_name: dayName, 
                     start_time: selectedTime, 
                     subject: subject,
-                    duration: selectedDuration
+                    duration: selectedDuration,
+                    collaborator_id: collaboratorId,
+                    collaborator_name: (collaboratorId && collaboratorId !== "") ? collaboratorName : null
                 };
                 
                 ttQueue.push(entry);
@@ -1536,7 +1981,10 @@
                             </div>
                             <div class="col-5">
                                 <div class="small fw-bold">${e.day_name} @ ${e.start_time}</div>
-                                <div class="text-muted extra-small">${e.duration} Hr Session</div>
+                                <div class="text-muted extra-small">
+                                    ${e.duration} Hr • 
+                                    ${e.collaborator_name ? `<span class="text-info">+ ${e.collaborator_name.split(' ')[0]}</span>` : 'Solo'}
+                                </div>
                             </div>
                             <div class="col-4">
                                 <div class="fw-bold text-info small truncate-text">${e.subject}</div>
@@ -1553,6 +2001,112 @@
             window.removeTTEntry = (index) => {
                 ttQueue.splice(index, 1);
                 renderTTQueue();
+            };
+
+            // Timetable to Map Logic
+            window.locateRoom = (roomNumber, roomId, level) => {
+                // Switch to Map View
+                const btnTracker = document.getElementById('btn-tracker');
+                const btnSchedule = document.getElementById('btn-schedule');
+                const viewSchedule = document.getElementById('view-schedule');
+                const viewTracker = document.getElementById('view-tracker');
+                
+                // If already on schedule, trigger switch
+                if (viewSchedule.classList.contains('active')) {
+                    btnTracker.click();
+                }
+
+                // Wait for switch animation, then set floor and highlight
+                setTimeout(() => {
+                    const floorSelect = document.getElementById('floorSelectorMap');
+                    if (floorSelect.value != level) {
+                        floorSelect.value = level;
+                        // Trigger the manual change event
+                        const event = new Event('change');
+                        floorSelect.dispatchEvent(event);
+                    }
+                    
+                    // Highlight room after map refresh
+                    setTimeout(() => {
+                        handleRoomSelection(null, roomNumber, roomId);
+                    }, 800); // Wait for map load
+                }, 500);
+            };
+
+            window.deleteClass = async (event, entryId) => {
+                event.stopPropagation(); // Don't trigger locateRoom
+                
+                const result = await Swal.fire({
+                    title: 'Remove Class?',
+                    text: 'This will permanently remove this entry from your weekly schedule.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, delete it',
+                    background: '#ffffff',
+                    color: '#0f172a'
+                });
+
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`/faculty/api/faculty/timetable/${entryId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            Swal.fire('Deleted!', data.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.error || 'Failed to delete entry.', 'error');
+                        }
+                    } catch (err) {
+                        console.error("Error deleting class:", err);
+                        Swal.fire('Error', 'A network error occurred.', 'error');
+                    }
+                }
+            };
+
+            window.deleteBooking = async (event, bookingId) => {
+                event.stopPropagation(); // Don't trigger locateRoom
+                
+                const result = await Swal.fire({
+                    title: 'Cancel Booking?',
+                    text: 'This will cancel your ad-hoc reservation and free up the room.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, cancel it',
+                    background: '#ffffff',
+                    color: '#0f172a'
+                });
+
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`/faculty/api/bookings/cancel/${bookingId}`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            Swal.fire('Cancelled!', data.message, 'success').then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.error || 'Failed to cancel reservation.', 'error');
+                        }
+                    } catch (err) {
+                        console.error("Error cancelling reservation:", err);
+                        Swal.fire('Error', 'A network error occurred.', 'error');
+                    }
+                }
             };
 
             syncBtn.addEventListener('click', async () => {

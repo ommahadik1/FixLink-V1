@@ -1108,11 +1108,11 @@ body {
 }
 
 .room-poly.occupied-status {
-    fill: var(--mitwpu-orange) !important;
+    fill: var(--danger-color) !important;
 }
 
 .room-poly.vacant-status {
-    fill: var(--mitwpu-green) !important;
+    fill: var(--success-color) !important;
 }
 
 .room-group.selected .room-text {
