@@ -256,5 +256,18 @@
         stroke: #0d6efd !important;
         stroke-width: 3px !important;
     }
+
+    @media (max-width: 767px) {
+        #roomDetailsPanel, #roomPopUp {
+            width: calc(100% - 24px) !important;
+            right: 12px !important;
+            left: 12px !important;
+            top: auto !important;
+            bottom: 20px !important;
+            max-height: 70vh !important;
+            overflow-y: auto !important;
+            z-index: 1100 !important;
+        }
+    }
 </style>
 {% endblock %}

@@ -829,6 +829,19 @@
     .cell-meta { font-size: 0.65rem; color: #64748b; font-weight: 600; margin-top: 2px; }
 
     .timetable-cell.vacant { background: #ffffff; }
+
+    @media (max-width: 767px) {
+        #roomPopUp {
+            width: calc(100% - 24px) !important;
+            right: 12px !important;
+            left: 12px !important;
+            top: auto !important;
+            bottom: 20px !important;
+            max-height: 70vh !important;
+            overflow-y: auto !important;
+            z-index: 1100 !important;
+        }
+    }
 </style>
 {% endblock %}
 
