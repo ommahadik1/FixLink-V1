@@ -2856,6 +2856,10 @@ body {
         height: auto;
     }
 
+    .input-group.flex-nowrap .form-control {
+        min-width: 0; /* Allow it to shrink to fit next to the button */
+    }
+
     /* Timetable Grid */
     .timetable-grid {
         overflow-x: auto;
@@ -3803,12 +3807,20 @@ img {
         border-radius: 20px !important;
     }
 
-    .btn,
+    /* Touch targets — exclude input-group buttons */
+    .btn:not(.input-group .btn):not(.input-group-text .btn),
     .form-control,
     .form-select,
     .room-btn,
     .choice-btn {
         min-height: 44px;
+    }
+
+    /* Ensure input-group remains single-line */
+    .input-group .btn,
+    .input-group .input-group-text {
+        min-height: unset;
+        height: auto;
     }
 
     .timetable-grid {
@@ -3911,7 +3923,8 @@ img {
     }
 
     /* ── Touch targets — ONLY on mobile ── */
-    .btn,
+    /* ── Touch targets — ONLY on mobile ── */
+    .btn:not(.input-group .btn):not(.input-group-text .btn),
     .room-btn,
     .choice-btn {
         min-height: 44px;
